@@ -9,10 +9,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
-
-    // Used to load the 'ui' library on application startup.
     static {
-        System.loadLibrary("lindroidui");
+        System.loadLibrary("jni_lindroidui");
     }
 
     @Override
@@ -20,20 +18,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Example of a call to a native method
+        Thread thread = new Thread(this::nativeInit);
+        thread.start();
         SurfaceView sv = findViewById(R.id.surfaceView);
         SurfaceHolder sh = sv.getHolder();
 
         sh.addCallback(this);
-
     }
-
-    /**
-     * A native method that is implemented by the 'ui' native library,
-     * which is packaged with this application.
-     */
-    public native void nativeSurfaceCreated(Surface surface);
-    public native void nativeSurfaceChanged(Surface surface);
 
     @Override
     public void surfaceCreated(@NonNull SurfaceHolder holder) {
@@ -52,7 +43,15 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     @Override
-    public void surfaceDestroyed(@NonNull SurfaceHolder surfaceHolder) {
-
+    public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+        Surface surface = holder.getSurface();
+        if (surface != null) {
+            nativeSurfaceDestroyed(surface);
+        }
     }
+
+    public native void nativeInit();
+    public native void nativeSurfaceCreated(Surface surface);
+    public native void nativeSurfaceChanged(Surface surface);
+    public native void nativeSurfaceDestroyed(Surface surface);
 }

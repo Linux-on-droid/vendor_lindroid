@@ -1,0 +1,50 @@
+android_app {
+    name: "LindroidUI",
+    platform_apis: true,
+    certificate: "platform",
+    system_ext_specific: true,
+
+    srcs: ["java/**/*.java"],
+
+    static_libs: [
+        "androidx.appcompat_appcompat",
+        "com.google.android.material_material",
+    ],
+    jni_libs: [
+        "libjni_lindroidui",
+    ],
+    required: [
+        "libjni_lindroidui",
+    ],
+}
+
+cc_library {
+    name: "libjni_lindroidui",
+    system_ext_specific: true,
+
+    srcs: [
+        "cpp/native-lib.cpp",
+        "cpp/ComposerImpl.cpp",
+    ],
+    shared_libs: [
+        "libbase",
+        "libbinder",
+        "libbinder_ndk",
+        "libcutils",
+        "libutils",
+        "liblog",
+        "libui",
+        "libgui",
+        "libnativewindow",
+        "libandroid",
+        "libandroid_runtime",
+        "vendor.lindroid.composer-ndk",
+    ],
+    static_libs: [
+        "libaidlcommonsupport",
+    ],
+    cppflags: [
+        "-Wno-unused-parameter",
+        "-Wno-unused-variable",
+    ],
+}
