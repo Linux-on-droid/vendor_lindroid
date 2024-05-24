@@ -103,13 +103,13 @@ ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareB
     auto display = mDisplays.find(in_displayId);
     if (display != mDisplays.end()) {
         if (display->second.surface == nullptr) {
-            ALOGE("%s: Get Surface Failed!", __FUNCTION__);
+            //ALOGE("%s: Get Surface Failed!", __FUNCTION__);
             return ndk::ScopedAStatus::ok();
         }
         *_aidl_return = display->second.surface->attachBuffer(buffer);
         if (*_aidl_return == NO_ERROR) {
             if (display->second.nativeWindow == nullptr) {
-                ALOGE("%s: Get NativeWindow Failed!", __FUNCTION__);
+                //ALOGE("%s: Get NativeWindow Failed!", __FUNCTION__);
                 return ndk::ScopedAStatus::ok();
             }
             *_aidl_return = ANativeWindow_queueBuffer(display->second.nativeWindow, buffer, -1);
