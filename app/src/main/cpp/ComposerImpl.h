@@ -18,6 +18,13 @@ namespace vendor {
 namespace lindroid {
 namespace composer {
 
+struct ComposerDisplay {
+    sp<Surface> surface;
+    ANativeWindow *nativeWindow;
+    DisplayConfiguration displayConfig;
+    bool plugged;
+};
+
 class ComposerImpl : public BnComposer {
 public:
     virtual ndk::ScopedAStatus registerCallback(const std::shared_ptr<IComposerCallback> &in_cb) override;
@@ -31,16 +38,13 @@ public:
     virtual ndk::ScopedAStatus setVsyncEnabled(int32_t in_enabled) override;
     virtual ndk::ScopedAStatus setBuffer(int64_t in_displayId, const HardwareBuffer &in_buffer, int32_t in_fenceFd, int32_t *_aidl_return) override;
 
-    void onSurfaceCreated(sp<Surface> surface, ANativeWindow* nativeWindow);
-    void onSurfaceChanged(sp<Surface> surface, ANativeWindow* nativeWindow);
-    void onSurfaceDestroyed(sp<Surface> surface, ANativeWindow* nativeWindow);
+    void onSurfaceCreated(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
+    void onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
+    void onSurfaceDestroyed(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
 
 private:
     std::shared_ptr<IComposerCallback> mCallbacks;
-    sp<Surface> mSurface;
-    ANativeWindow *mNativeWindow;
-    DisplayConfiguration mDisplayConfig;
-    bool plugged;
+    std::unordered_map<int64_t, ComposerDisplay> mDisplays;
 };
 
 } // namespace composer

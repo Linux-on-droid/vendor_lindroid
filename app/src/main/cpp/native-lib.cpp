@@ -39,6 +39,7 @@ extern "C" void
 Java_org_lindroid_ui_MainActivity_nativeSurfaceCreated(
     JNIEnv *env,
     jobject /* this */,
+    jlong displayId,
     jobject surface) {
 
     sp<Surface> sf = android_view_Surface_getSurface(env, surface);
@@ -55,7 +56,7 @@ Java_org_lindroid_ui_MainActivity_nativeSurfaceCreated(
         ALOGE("Composer is not initialized!");
         return;
     }
-    composer->onSurfaceCreated(sf, nativeWindow);
+    composer->onSurfaceCreated(displayId, sf, nativeWindow);
 
     ALOGI("SurfaceCreated: Width: %d, Height: %d", ANativeWindow_getWidth(nativeWindow), ANativeWindow_getHeight(nativeWindow));
 }
@@ -64,6 +65,7 @@ extern "C" void
 Java_org_lindroid_ui_MainActivity_nativeSurfaceChanged(
     JNIEnv *env,
     jobject /* this */,
+    jlong displayId,
     jobject surface) {
 
     sp<Surface> sf = android_view_Surface_getSurface(env, surface);
@@ -80,7 +82,7 @@ Java_org_lindroid_ui_MainActivity_nativeSurfaceChanged(
         ALOGE("Composer is not initialized!");
         return;
     }
-    composer->onSurfaceChanged(sf, nativeWindow);
+    composer->onSurfaceChanged(displayId, sf, nativeWindow);
 
     ALOGE("SurfaceChanged: Width: %d, Height: %d", ANativeWindow_getWidth(nativeWindow), ANativeWindow_getHeight(nativeWindow));
 }
@@ -89,6 +91,7 @@ extern "C" void
 Java_org_lindroid_ui_MainActivity_nativeSurfaceDestroyed(
     JNIEnv *env,
     jobject /* this */,
+    jlong displayId,
     jobject surface) {
 
     sp<Surface> sf = android_view_Surface_getSurface(env, surface);
@@ -105,7 +108,7 @@ Java_org_lindroid_ui_MainActivity_nativeSurfaceDestroyed(
         ALOGE("Composer is not initialized!");
         return;
     }
-    composer->onSurfaceDestroyed(sf, nativeWindow);
+    composer->onSurfaceDestroyed(displayId, sf, nativeWindow);
 
     ALOGE("SurfaceDestroyed");
 }
