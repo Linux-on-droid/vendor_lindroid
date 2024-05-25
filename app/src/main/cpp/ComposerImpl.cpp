@@ -81,6 +81,16 @@ ndk::ScopedAStatus ComposerImpl::setVsyncEnabled(int32_t in_enabled) {
 }
 
 ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareBuffer &hardwareBuffer, int32_t fenceFd, int32_t *_aidl_return) {
+    auto display = mDisplays.find(in_displayId);
+    if (display != mDisplays.end()) {
+        if (display->second->surface == nullptr) {
+            //ALOGE("%s: Get Surface Failed!", __FUNCTION__);
+            return ndk::ScopedAStatus::ok();
+        }
+    } else {
+        // ALOGE("%s: Get Display Failed!", __FUNCTION__);
+        return ndk::ScopedAStatus::ok();
+    }
     native_handle_t *nativeHandle = makeFromAidl(hardwareBuffer.handle);
     const AHardwareBuffer_Desc desc{
         .width = static_cast<uint32_t>(hardwareBuffer.description.width),
@@ -98,20 +108,17 @@ ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareB
         *_aidl_return = static_cast<int32_t>(status);
     }
     ANativeWindowBuffer *buffer = AHardwareBuffer_to_ANativeWindowBuffer(ahwb);
-    auto display = mDisplays.find(in_displayId);
-    if (display != mDisplays.end()) {
-        if (display->second->surface == nullptr) {
-            //ALOGE("%s: Get Surface Failed!", __FUNCTION__);
+    if (mDisplays[in_displayId]->surface == nullptr) {
+        // ALOGE("%s: Get Surface Failed!", __FUNCTION__);
+        return ndk::ScopedAStatus::ok();
+    }
+    *_aidl_return = mDisplays[in_displayId]->surface->attachBuffer(buffer);
+    if (*_aidl_return == NO_ERROR) {
+        if (mDisplays[in_displayId]->nativeWindow == nullptr) {
+            // ALOGE("%s: Get NativeWindow Failed!", __FUNCTION__);
             return ndk::ScopedAStatus::ok();
         }
-        *_aidl_return = display->second->surface->attachBuffer(buffer);
-        if (*_aidl_return == NO_ERROR) {
-            if (display->second->nativeWindow == nullptr) {
-                //ALOGE("%s: Get NativeWindow Failed!", __FUNCTION__);
-                return ndk::ScopedAStatus::ok();
-            }
-            *_aidl_return = ANativeWindow_queueBuffer(display->second->nativeWindow, buffer, -1);
-        }
+        *_aidl_return = ANativeWindow_queueBuffer(mDisplays[in_displayId]->nativeWindow, buffer, -1);
     }
 
     return ndk::ScopedAStatus::ok();
