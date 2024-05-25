@@ -159,7 +159,6 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
         return;
     }
     ALOGI("%s: Display: %" PRId64 ", Width: %d, Height: %d", __FUNCTION__, displayId, ANativeWindow_getWidth(nativeWindow), ANativeWindow_getHeight(nativeWindow));
-    ANativeWindow_setAutoRefresh(nativeWindow, true);
     DisplayConfiguration displayConfig;
     displayConfig.configId = 0;
     displayConfig.displayId = 0;
