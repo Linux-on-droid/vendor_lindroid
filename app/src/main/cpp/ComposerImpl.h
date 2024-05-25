@@ -1,17 +1,24 @@
 #pragma once
 
+#include <gui/IProducerListener.h>
 #include <gui/Surface.h>
+#include <ui/Fence.h>
+#include <ui/GraphicBuffer.h>
 
 #include <aidl/android/hardware/graphics/common/HardwareBuffer.h>
 #include <aidl/vendor/lindroid/composer/BnComposer.h>
 #include <aidl/vendor/lindroid/composer/DisplayConfiguration.h>
 #include <aidl/vendor/lindroid/composer/IComposerCallback.h>
 
+#define MAX_DEQUEUEABLE_BUFFERS 5
+
 using aidl::android::hardware::graphics::common::HardwareBuffer;
 using aidl::vendor::lindroid::composer::DisplayConfiguration;
 using aidl::vendor::lindroid::composer::IComposerCallback;
 using android::sp;
 using android::Surface;
+using android::GraphicBuffer;
+using android::IProducerListener;
 
 namespace aidl {
 namespace vendor {
@@ -23,6 +30,7 @@ struct ComposerDisplay {
     ANativeWindow *nativeWindow;
     DisplayConfiguration displayConfig;
     bool plugged;
+    sp<IProducerListener> listener;
 };
 
 class ComposerImpl : public BnComposer {
@@ -44,7 +52,7 @@ public:
 
 private:
     std::shared_ptr<IComposerCallback> mCallbacks;
-    std::unordered_map<int64_t, ComposerDisplay> mDisplays;
+    std::unordered_map<int64_t, ComposerDisplay*> mDisplays;
 };
 
 } // namespace composer

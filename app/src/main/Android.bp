@@ -46,5 +46,6 @@ cc_library {
     cppflags: [
         "-Wno-unused-parameter",
         "-Wno-unused-variable",
+        "-Wno-unused-private-field",
     ],
 }

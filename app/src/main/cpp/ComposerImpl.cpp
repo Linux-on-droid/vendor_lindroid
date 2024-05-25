@@ -3,9 +3,7 @@
 #include <aidlcommonsupport/NativeHandle.h>
 #include <android/hardware_buffer.h>
 #include <android/native_window.h>
-#include <gui/IProducerListener.h>
 #include <private/android/AHardwareBufferHelpers.h>
-#include <ui/Fence.h>
 #include <utils/Log.h>
 #include <vndk/hardware_buffer.h>
 #include <vndk/window.h>
@@ -22,9 +20,9 @@ namespace composer {
 ndk::ScopedAStatus ComposerImpl::registerCallback(const std::shared_ptr<IComposerCallback> &in_cb) {
     mCallbacks = in_cb;
     for (auto &display : mDisplays) {
-        if (!display.second.plugged && display.second.nativeWindow != nullptr) {
+        if (!display.second->plugged && display.second->nativeWindow != nullptr) {
             mCallbacks->onHotplugReceived(0, display.first, true, display.first == 0);
-            display.second.plugged = true;
+            display.second->plugged = true;
         }
     }
     return ndk::ScopedAStatus::ok();
@@ -44,7 +42,7 @@ ndk::ScopedAStatus ComposerImpl::getActiveConfig(int64_t in_displayId, DisplayCo
     ALOGI("%s: Display: %" PRId64 "", __FUNCTION__, in_displayId);
     auto display = mDisplays.find(in_displayId);
     if (display != mDisplays.end()) {
-        *_aidl_return = display->second.displayConfig;
+        *_aidl_return = display->second->displayConfig;
     }
     return ndk::ScopedAStatus::ok();
 }
@@ -102,22 +100,34 @@ ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareB
     ANativeWindowBuffer *buffer = AHardwareBuffer_to_ANativeWindowBuffer(ahwb);
     auto display = mDisplays.find(in_displayId);
     if (display != mDisplays.end()) {
-        if (display->second.surface == nullptr) {
+        if (display->second->surface == nullptr) {
             //ALOGE("%s: Get Surface Failed!", __FUNCTION__);
             return ndk::ScopedAStatus::ok();
         }
-        *_aidl_return = display->second.surface->attachBuffer(buffer);
+        *_aidl_return = display->second->surface->attachBuffer(buffer);
         if (*_aidl_return == NO_ERROR) {
-            if (display->second.nativeWindow == nullptr) {
+            if (display->second->nativeWindow == nullptr) {
                 //ALOGE("%s: Get NativeWindow Failed!", __FUNCTION__);
                 return ndk::ScopedAStatus::ok();
             }
-            *_aidl_return = ANativeWindow_queueBuffer(display->second.nativeWindow, buffer, -1);
+            *_aidl_return = ANativeWindow_queueBuffer(display->second->nativeWindow, buffer, -1);
         }
     }
 
     return ndk::ScopedAStatus::ok();
 }
+
+class OnBufferReleasedListener : public BnProducerListener {
+public:
+    OnBufferReleasedListener(ComposerDisplay *targetDisplay) : targetDisplay(targetDisplay) {}
+
+    virtual ~OnBufferReleasedListener() = default;
+    virtual void onBufferReleased() { }
+    virtual bool needsReleaseNotify() { return true; }
+
+private:
+    ComposerDisplay *targetDisplay;
+};
 
 void ComposerImpl::onSurfaceCreated(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow) {
     if (nativeWindow == nullptr) {
@@ -152,24 +162,27 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
     displayConfig.dpi.y = 320;
     displayConfig.vsyncPeriod = 16666667; // 60Hz
 
-    sp<IProducerListener> listener = new StubProducerListener();
-    surface->connect(NATIVE_WINDOW_API_EGL, listener);
-    surface->getIGraphicBufferProducer()->allowAllocation(true);
-
-    ComposerDisplay targetDisplay;
-    targetDisplay.nativeWindow = nativeWindow;
-    targetDisplay.surface = surface;
-    targetDisplay.displayConfig = displayConfig;
-    targetDisplay.plugged = false;
     auto display = mDisplays.find(displayId);
     if (display != mDisplays.end()) {
-        targetDisplay.plugged = display->second.plugged;
+        display->second->nativeWindow = nativeWindow;
+        display->second->surface = surface;
+        display->second->displayConfig = displayConfig;
+    } else {
+        ComposerDisplay *targetDisplay = new ComposerDisplay();
+        targetDisplay->nativeWindow = nativeWindow;
+        targetDisplay->surface = surface;
+        targetDisplay->displayConfig = displayConfig;
+        targetDisplay->plugged = false;
+        targetDisplay->listener = new OnBufferReleasedListener(targetDisplay);
+        mDisplays[displayId] = targetDisplay;
     }
 
-    mDisplays[displayId] = targetDisplay;
-    if (!mDisplays[displayId].plugged && mCallbacks != nullptr) {
+    surface->connect(NATIVE_WINDOW_API_EGL, mDisplays[displayId]->listener);
+    surface->getIGraphicBufferProducer()->allowAllocation(true);
+
+    if (!mDisplays[displayId]->plugged && mCallbacks != nullptr) {
         mCallbacks->onHotplugReceived(0, displayId, true, displayId == 0);
-        mDisplays[displayId].plugged = true;
+        mDisplays[displayId]->plugged = true;
     }
 }
 
@@ -177,7 +190,7 @@ void ComposerImpl::onSurfaceDestroyed(int64_t displayId, sp<Surface> surface, AN
     ALOGI("%s", __FUNCTION__);
     auto display = mDisplays.find(displayId);
     if (display != mDisplays.end()) {
-        display->second.surface = nullptr;
+        display->second->surface = nullptr;
     }
 }
 
