@@ -120,6 +120,7 @@ ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareB
         }
         *_aidl_return = ANativeWindow_queueBuffer(mDisplays[in_displayId]->nativeWindow, buffer, -1);
     }
+    AHardwareBuffer_release(ahwb);
 
     return ndk::ScopedAStatus::ok();
 }
@@ -129,7 +130,18 @@ public:
     DisplayListener(ComposerDisplay *targetDisplay) : targetDisplay(targetDisplay) {}
 
     virtual ~DisplayListener() = default;
-    virtual void onBufferReleased() {}
+    virtual void onBufferReleased() {
+        AHardwareBuffer *rawSourceBuffer;
+        int rawSourceFence;
+        float texTransform[16];
+
+        status_t err = ANativeWindow_getLastQueuedBuffer(targetDisplay->nativeWindow, &rawSourceBuffer, &rawSourceFence, texTransform);
+        if (err == NO_ERROR) {
+            if (rawSourceBuffer != nullptr) {
+                AHardwareBuffer_release(rawSourceBuffer);
+            }
+        }
+    }
     virtual bool needsReleaseNotify() { return true; }
     virtual void onBuffersDiscarded(const std::vector<sp<GraphicBuffer>>& buffers) { }
 private:
