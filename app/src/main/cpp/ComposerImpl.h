@@ -1,6 +1,5 @@
 #pragma once
 
-#include <gui/IProducerListener.h>
 #include <gui/Surface.h>
 #include <ui/Fence.h>
 #include <ui/GraphicBuffer.h>
@@ -17,8 +16,7 @@ using aidl::vendor::lindroid::composer::DisplayConfiguration;
 using aidl::vendor::lindroid::composer::IComposerCallback;
 using android::sp;
 using android::Surface;
-using android::GraphicBuffer;
-using android::IProducerListener;
+using android::SurfaceListener;
 
 namespace aidl {
 namespace vendor {
@@ -30,7 +28,7 @@ struct ComposerDisplay {
     ANativeWindow *nativeWindow;
     DisplayConfiguration displayConfig;
     bool plugged;
-    sp<IProducerListener> listener;
+    sp<SurfaceListener> listener;
 };
 
 class ComposerImpl : public BnComposer {

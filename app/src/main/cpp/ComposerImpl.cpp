@@ -117,14 +117,14 @@ ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareB
     return ndk::ScopedAStatus::ok();
 }
 
-class OnBufferReleasedListener : public BnProducerListener {
+class DisplayListener : public SurfaceListener {
 public:
-    OnBufferReleasedListener(ComposerDisplay *targetDisplay) : targetDisplay(targetDisplay) {}
+    DisplayListener(ComposerDisplay *targetDisplay) : targetDisplay(targetDisplay) {}
 
-    virtual ~OnBufferReleasedListener() = default;
-    virtual void onBufferReleased() { }
+    virtual ~DisplayListener() = default;
+    virtual void onBufferReleased() {}
     virtual bool needsReleaseNotify() { return true; }
-
+    virtual void onBuffersDiscarded(const std::vector<sp<GraphicBuffer>>& buffers) { }
 private:
     ComposerDisplay *targetDisplay;
 };
@@ -173,11 +173,11 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
         targetDisplay->surface = surface;
         targetDisplay->displayConfig = displayConfig;
         targetDisplay->plugged = false;
-        targetDisplay->listener = new OnBufferReleasedListener(targetDisplay);
+        targetDisplay->listener = new DisplayListener(targetDisplay);
         mDisplays[displayId] = targetDisplay;
     }
 
-    surface->connect(NATIVE_WINDOW_API_EGL, mDisplays[displayId]->listener);
+    surface->connect(NATIVE_WINDOW_API_EGL, false, mDisplays[displayId]->listener);
     surface->getIGraphicBufferProducer()->allowAllocation(true);
 
     if (!mDisplays[displayId]->plugged && mCallbacks != nullptr) {
