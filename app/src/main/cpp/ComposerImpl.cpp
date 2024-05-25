@@ -178,7 +178,6 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
     }
 
     surface->connect(NATIVE_WINDOW_API_EGL, false, mDisplays[displayId]->listener);
-    surface->getIGraphicBufferProducer()->allowAllocation(true);
 
     if (!mDisplays[displayId]->plugged && mCallbacks != nullptr) {
         mCallbacks->onHotplugReceived(0, displayId, true, displayId == 0);
