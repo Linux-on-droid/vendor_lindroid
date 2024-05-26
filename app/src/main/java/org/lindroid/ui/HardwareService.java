@@ -1,5 +1,7 @@
 package org.lindroid.ui;
 
+import static org.lindroid.ui.NativeLib.nativeInitInputDevice;
+
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
@@ -14,8 +16,10 @@ public class HardwareService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         instance = this;
-        Thread thread = new Thread(NativeLib::nativeStartComposerService);
-        thread.start();
+
+        Thread composerThread = new Thread(NativeLib::nativeStartComposerService);
+        composerThread.start();
+        nativeInitInputDevice();
 
         return START_STICKY;
     }
