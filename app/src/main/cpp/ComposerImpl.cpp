@@ -220,6 +220,7 @@ void ComposerImpl::onDisplayDestroyed(int64_t displayId) {
         if (mCallbacks != nullptr)
             mCallbacks->onHotplugReceived(0, displayId, false, displayId == 0);
     }
+    mDisplays.erase(displayId);
 }
 
 } // namespace composer
