@@ -6,9 +6,9 @@ import android.os.IBinder;
 
 import androidx.annotation.Nullable;
 
-public class ComposerService extends Service {
+public class HardwareService extends Service {
 
-    private static ComposerService instance = null;
+    private static HardwareService instance = null;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {

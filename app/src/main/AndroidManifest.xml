@@ -21,7 +21,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".ComposerService"
+            android:name=".HardwareService"
             android:exported="true"/>
 
     </application>

@@ -22,8 +22,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (!ComposerService.isInstanceCreated()) {
-            startService(new Intent(this, ComposerService.class));
+        if (!HardwareService.isInstanceCreated()) {
+            startService(new Intent(this, HardwareService.class));
         }
         SurfaceView sv = findViewById(R.id.surfaceView);
         SurfaceHolder sh = sv.getHolder();
