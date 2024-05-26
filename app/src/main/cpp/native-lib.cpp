@@ -20,7 +20,7 @@ using namespace android;
 static std::shared_ptr<ComposerImpl> composer = nullptr;
 
 extern "C" void
-Java_org_lindroid_ui_MainActivity_nativeInit(
+Java_org_lindroid_ui_NativeLib_nativeStartComposerService(
     JNIEnv *env,
     jobject /* this */) {
     ALOGI("Init native: Starting composer binder service...");
@@ -36,7 +36,7 @@ Java_org_lindroid_ui_MainActivity_nativeInit(
 }
 
 extern "C" void
-Java_org_lindroid_ui_MainActivity_nativeSurfaceCreated(
+Java_org_lindroid_ui_NativeLib_nativeSurfaceCreated(
     JNIEnv *env,
     jobject /* this */,
     jlong displayId,
@@ -53,6 +53,12 @@ Java_org_lindroid_ui_MainActivity_nativeSurfaceCreated(
         return;
     }
     if (composer == nullptr) {
+        int tryCount = 0;
+        while (composer == nullptr && tryCount < 10) {
+            ALOGE("Composer is not initialized! Try again...");
+            usleep(1000000);
+            tryCount++;
+        }
         ALOGE("Composer is not initialized!");
         return;
     }
@@ -62,7 +68,7 @@ Java_org_lindroid_ui_MainActivity_nativeSurfaceCreated(
 }
 
 extern "C" void
-Java_org_lindroid_ui_MainActivity_nativeSurfaceChanged(
+Java_org_lindroid_ui_NativeLib_nativeSurfaceChanged(
     JNIEnv *env,
     jobject /* this */,
     jlong displayId,
@@ -79,6 +85,12 @@ Java_org_lindroid_ui_MainActivity_nativeSurfaceChanged(
         return;
     }
     if (composer == nullptr) {
+        int tryCount = 0;
+        while (composer == nullptr && tryCount < 10) {
+            ALOGE("Composer is not initialized! Try again...");
+            usleep(1000000);
+            tryCount++;
+        }
         ALOGE("Composer is not initialized!");
         return;
     }
@@ -88,7 +100,7 @@ Java_org_lindroid_ui_MainActivity_nativeSurfaceChanged(
 }
 
 extern "C" void
-Java_org_lindroid_ui_MainActivity_nativeSurfaceDestroyed(
+Java_org_lindroid_ui_NativeLib_nativeSurfaceDestroyed(
     JNIEnv *env,
     jobject /* this */,
     jlong displayId,
@@ -105,6 +117,12 @@ Java_org_lindroid_ui_MainActivity_nativeSurfaceDestroyed(
         return;
     }
     if (composer == nullptr) {
+        int tryCount = 0;
+        while (composer == nullptr && tryCount < 10) {
+            ALOGE("Composer is not initialized! Try again...");
+            usleep(1000000);
+            tryCount++;
+        }
         ALOGE("Composer is not initialized!");
         return;
     }

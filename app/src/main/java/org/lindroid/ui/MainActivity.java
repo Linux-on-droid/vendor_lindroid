@@ -1,18 +1,19 @@
 package org.lindroid.ui;
 
+import static org.lindroid.ui.NativeLib.nativeSurfaceChanged;
+import static org.lindroid.ui.NativeLib.nativeSurfaceCreated;
+import static org.lindroid.ui.NativeLib.nativeSurfaceDestroyed;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
-    static {
-        System.loadLibrary("jni_lindroidui");
-    }
-
     private static final long DISPLAY_ID = 0;
 
     @Override
@@ -20,8 +21,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Thread thread = new Thread(this::nativeInit);
-        thread.start();
+        if (!ComposerService.isInstanceCreated()) {
+            startService(new Intent(this, ComposerService.class));
+        }
         SurfaceView sv = findViewById(R.id.surfaceView);
         SurfaceHolder sh = sv.getHolder();
 
@@ -51,9 +53,4 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             nativeSurfaceDestroyed(DISPLAY_ID, surface);
         }
     }
-
-    public native void nativeInit();
-    public native void nativeSurfaceCreated(long displayId, Surface surface);
-    public native void nativeSurfaceChanged(long displayId, Surface surface);
-    public native void nativeSurfaceDestroyed(long displayId, Surface surface);
 }
