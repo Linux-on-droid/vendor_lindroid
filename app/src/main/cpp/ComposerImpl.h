@@ -47,6 +47,7 @@ public:
     void onSurfaceCreated(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
     void onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
     void onSurfaceDestroyed(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
+    void onDisplayDestroyed(int64_t displayId);
 
 private:
     std::shared_ptr<IComposerCallback> mCallbacks;

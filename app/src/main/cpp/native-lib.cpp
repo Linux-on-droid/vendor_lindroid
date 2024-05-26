@@ -130,3 +130,24 @@ Java_org_lindroid_ui_NativeLib_nativeSurfaceDestroyed(
 
     ALOGE("SurfaceDestroyed");
 }
+
+extern "C" void
+Java_org_lindroid_ui_NativeLib_nativeDisplayDestroyed(
+        JNIEnv *env,
+        jobject /* this */,
+        jlong displayId) {
+
+    if (composer == nullptr) {
+        int tryCount = 0;
+        while (composer == nullptr && tryCount < 10) {
+            ALOGE("Composer is not initialized! Try again...");
+            usleep(1000000);
+            tryCount++;
+        }
+        ALOGE("Composer is not initialized!");
+        return;
+    }
+    composer->onDisplayDestroyed(displayId);
+
+    ALOGE("SurfaceDestroyed");
+}

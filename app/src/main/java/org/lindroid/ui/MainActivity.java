@@ -1,5 +1,6 @@
 package org.lindroid.ui;
 
+import static org.lindroid.ui.NativeLib.nativeDisplayDestroyed;
 import static org.lindroid.ui.NativeLib.nativeSurfaceChanged;
 import static org.lindroid.ui.NativeLib.nativeSurfaceCreated;
 import static org.lindroid.ui.NativeLib.nativeSurfaceDestroyed;
@@ -28,6 +29,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         SurfaceHolder sh = sv.getHolder();
 
         sh.addCallback(this);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // nativeDisplayDestroyed(DISPLAY_ID); Lets never destroy primary display
     }
 
     @Override

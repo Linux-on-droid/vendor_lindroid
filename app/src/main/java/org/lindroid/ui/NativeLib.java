@@ -11,4 +11,5 @@ public class NativeLib {
     public static native void nativeSurfaceCreated(long displayId, Surface surface);
     public static native void nativeSurfaceChanged(long displayId, Surface surface);
     public static native void nativeSurfaceDestroyed(long displayId, Surface surface);
+    public static native void nativeDisplayDestroyed(long displayId);
 }

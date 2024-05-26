@@ -211,6 +211,17 @@ void ComposerImpl::onSurfaceDestroyed(int64_t displayId, sp<Surface> surface, AN
     }
 }
 
+void ComposerImpl::onDisplayDestroyed(int64_t displayId) {
+    ALOGI("%s", __FUNCTION__);
+    auto display = mDisplays.find(displayId);
+    if (display != mDisplays.end()) {
+        display->second->surface = nullptr;
+        display->second->plugged = false;
+        if (mCallbacks != nullptr)
+            mCallbacks->onHotplugReceived(0, displayId, false, displayId == 0);
+    }
+}
+
 } // namespace composer
 } // namespace lindroid
 } // namespace vendor
