@@ -1,5 +1,6 @@
 package org.lindroid.ui;
 
+import static org.lindroid.ui.KeyCodeConverter.convertKeyCode;
 import static org.lindroid.ui.NativeLib.nativeDisplayDestroyed;
 import static org.lindroid.ui.NativeLib.nativeKeyEvent;
 import static org.lindroid.ui.NativeLib.nativeTouchEvent;
@@ -117,13 +118,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        nativeKeyEvent(DISPLAY_ID, keyCode, true);
+        nativeKeyEvent(DISPLAY_ID, convertKeyCode(keyCode), true);
         return super.onKeyDown(keyCode, event);
     }
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        nativeKeyEvent(DISPLAY_ID, keyCode, false);
+        nativeKeyEvent(DISPLAY_ID, convertKeyCode(keyCode), false);
         return super.onKeyUp(keyCode, event);
     }
 
