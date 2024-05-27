@@ -9,14 +9,25 @@
 
 #define UINPUT_DEVICE "/dev/uinput"
 
+#define DEVICE_KEYBOARD 0
+#define DEVICE_TOUCH 1
+#define DEVICE_TABLET 2
+
 using android::Mutex;
 using android::RefBase;
 using android::status_t;
 
 struct UInputDevice {
-    status_t inject(uint16_t type, uint16_t code, int32_t value);
+    void getFD(int32_t device, int32_t *fd);
+    status_t start(int32_t device, int64_t displayId);
+    status_t stop(int32_t device);
+    status_t inject(int32_t device, uint16_t type, uint16_t code, int32_t value);
 
-    int32_t mFD = -1;
+    int32_t mWidth;
+    int32_t mHeight;
+    int32_t mFDKeyboard = -1;
+    int32_t mFDTouch = -1;
+    int32_t mFDTablet = -1;
 };
 
 class InputDevice : public RefBase {
