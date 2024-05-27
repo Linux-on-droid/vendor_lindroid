@@ -205,13 +205,19 @@ err_ioctl:
 };
 
 status_t UInputDevice::stop(int32_t device) {
+    ALOGE("Stop device: %d", device);
     int32_t fd = -1;
+    int err = 0;
     getFD(device, &fd);
     if (fd < 0) {
+        ALOGE("Input device not open!");
         return OK;
     }
 
-    ioctl(fd, UI_DEV_DESTROY);
+    err = ioctl(fd, UI_DEV_DESTROY);
+    if (err < 0) {
+        ALOGE("UI_DEV_DESTROY failed");
+    }
     close(fd);
     fd = -1;
     return OK;

@@ -49,7 +49,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         // Lets never destroy primary display
         if (DISPLAY_ID != 0) {
             nativeDisplayDestroyed(DISPLAY_ID);
-            nativeStopInputDevice(DISPLAY_ID);
         }
     }
 
@@ -145,6 +144,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
         Surface surface = holder.getSurface();
         if (surface != null) {
+            nativeStopInputDevice(DISPLAY_ID);
             nativeSurfaceChanged(DISPLAY_ID, surface);
             nativeReconfigureInputDevice(DISPLAY_ID, w, h);
         }
@@ -155,6 +155,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         Surface surface = holder.getSurface();
         if (surface != null) {
             nativeSurfaceDestroyed(DISPLAY_ID, surface);
+            nativeStopInputDevice(DISPLAY_ID);
         }
     }
 }
