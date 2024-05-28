@@ -17,14 +17,15 @@ namespace vendor {
 namespace lindroid {
 namespace composer {
 
-ndk::ScopedAStatus ComposerImpl::registerCallback(const std::shared_ptr<IComposerCallback> &in_cb) {
-    ALOGI("%s", __FUNCTION__);
+ndk::ScopedAStatus ComposerImpl::registerCallback(const std::shared_ptr<IComposerCallback> &in_cb, int32_t sequenceId) {
+    ALOGI("%s: sequenceId: %d", __FUNCTION__, sequenceId);
     Mutex::Autolock _l(mLock);
 
+    mSequenceId = sequenceId;
     mCallbacks = in_cb;
     for (auto &display : mDisplays) {
         if (!display.second->plugged && display.second->nativeWindow != nullptr) {
-            mCallbacks->onHotplugReceived(0, display.first, true, display.first == 0);
+            mCallbacks->onHotplugReceived(mSequenceId, display.first, true, display.first == 0);
             display.second->plugged = true;
         }
     }
@@ -201,7 +202,7 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
     surface->connect(NATIVE_WINDOW_API_EGL, false, mDisplays[displayId]->listener);
 
     if (!mDisplays[displayId]->plugged && mCallbacks != nullptr) {
-        mCallbacks->onHotplugReceived(0, displayId, true, displayId == 0);
+        mCallbacks->onHotplugReceived(mSequenceId, displayId, true, displayId == 0);
         mDisplays[displayId]->plugged = true;
     }
 }
@@ -221,7 +222,7 @@ void ComposerImpl::onDisplayDestroyed(int64_t displayId) {
         display->second->surface = nullptr;
         display->second->plugged = false;
         if (mCallbacks != nullptr)
-            mCallbacks->onHotplugReceived(0, displayId, false, displayId == 0);
+            mCallbacks->onHotplugReceived(mSequenceId, displayId, false, displayId == 0);
     }
     mDisplays.erase(displayId);
 }

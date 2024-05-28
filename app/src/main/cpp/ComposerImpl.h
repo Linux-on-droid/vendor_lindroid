@@ -35,7 +35,7 @@ struct ComposerDisplay {
 
 class ComposerImpl : public BnComposer {
 public:
-    virtual ndk::ScopedAStatus registerCallback(const std::shared_ptr<IComposerCallback> &in_cb) override;
+    virtual ndk::ScopedAStatus registerCallback(const std::shared_ptr<IComposerCallback> &in_cb, int32_t sequenceId) override;
     virtual ndk::ScopedAStatus onHotplug(int64_t in_displayId, bool in_connected) override;
     virtual ndk::ScopedAStatus requestDisplay(int64_t in_displayId) override;
     virtual ndk::ScopedAStatus getActiveConfig(int64_t in_displayId, DisplayConfiguration *_aidl_return) override;
@@ -54,6 +54,7 @@ public:
 private:
     Mutex mLock;
 
+    int32_t mSequenceId;
     std::shared_ptr<IComposerCallback> mCallbacks;
     std::unordered_map<int64_t, ComposerDisplay*> mDisplays;
 };
