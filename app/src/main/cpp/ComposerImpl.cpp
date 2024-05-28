@@ -19,6 +19,8 @@ namespace composer {
 
 ndk::ScopedAStatus ComposerImpl::registerCallback(const std::shared_ptr<IComposerCallback> &in_cb) {
     ALOGI("%s", __FUNCTION__);
+    Mutex::Autolock _l(mLock);
+
     mCallbacks = in_cb;
     for (auto &display : mDisplays) {
         if (!display.second->plugged && display.second->nativeWindow != nullptr) {

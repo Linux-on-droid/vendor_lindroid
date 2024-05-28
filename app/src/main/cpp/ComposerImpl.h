@@ -3,6 +3,7 @@
 #include <gui/Surface.h>
 #include <ui/Fence.h>
 #include <ui/GraphicBuffer.h>
+#include <utils/Mutex.h>
 
 #include <aidl/android/hardware/graphics/common/HardwareBuffer.h>
 #include <aidl/vendor/lindroid/composer/BnComposer.h>
@@ -14,6 +15,7 @@
 using aidl::android::hardware::graphics::common::HardwareBuffer;
 using aidl::vendor::lindroid::composer::DisplayConfiguration;
 using aidl::vendor::lindroid::composer::IComposerCallback;
+using android::Mutex;
 using android::sp;
 using android::Surface;
 using android::SurfaceListener;
@@ -50,6 +52,8 @@ public:
     void onDisplayDestroyed(int64_t displayId);
 
 private:
+    Mutex mLock;
+
     std::shared_ptr<IComposerCallback> mCallbacks;
     std::unordered_map<int64_t, ComposerDisplay*> mDisplays;
 };
