@@ -24,7 +24,7 @@ ndk::ScopedAStatus ComposerImpl::registerCallback(const std::shared_ptr<ICompose
     mSequenceId = sequenceId;
     mCallbacks = in_cb;
     for (auto &display : mDisplays) {
-        if (!display.second->plugged && display.second->nativeWindow != nullptr) {
+        if (display.second->nativeWindow != nullptr) {
             mCallbacks->onHotplugReceived(mSequenceId, display.first, true, display.first == 0);
             display.second->plugged = true;
         }
