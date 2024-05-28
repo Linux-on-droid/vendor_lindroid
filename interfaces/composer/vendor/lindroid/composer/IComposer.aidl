@@ -5,7 +5,7 @@ import vendor.lindroid.composer.DisplayConfiguration;
 import android.hardware.graphics.common.HardwareBuffer;
 
 interface IComposer {
-    void registerCallback(in IComposerCallback cb);
+    void registerCallback(in IComposerCallback cb, int sequenceId);
     void onHotplug(long displayId, boolean connected);
 
     // Display
