@@ -18,6 +18,7 @@ namespace lindroid {
 namespace composer {
 
 ndk::ScopedAStatus ComposerImpl::registerCallback(const std::shared_ptr<IComposerCallback> &in_cb) {
+    ALOGI("%s", __FUNCTION__);
     mCallbacks = in_cb;
     for (auto &display : mDisplays) {
         if (!display.second->plugged && display.second->nativeWindow != nullptr) {
