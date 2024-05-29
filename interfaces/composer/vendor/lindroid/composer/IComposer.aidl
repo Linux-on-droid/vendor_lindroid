@@ -14,8 +14,8 @@ interface IComposer {
     void acceptChanges(long displayId);
     @nullable ParcelFileDescriptor getReleaseFence(long displayId);
     @nullable ParcelFileDescriptor present(long displayId);
-    void setPowerMode(int mode);
-    void setVsyncEnabled(int enabled);
+    void setPowerMode(long displayId, int mode);
+    void setVsyncEnabled(long displayId, int enabled);
     //void validate() 
 
     // Layer
