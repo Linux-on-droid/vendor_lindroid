@@ -127,6 +127,7 @@ ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareB
             // ALOGE("%s: Get NativeWindow Failed!", __FUNCTION__);
             return ndk::ScopedAStatus::ok();
         }
+        ANativeWindow_setSwapInterval(mDisplays[in_displayId]->nativeWindow, 0);
         *_aidl_return = ANativeWindow_queueBuffer(mDisplays[in_displayId]->nativeWindow, buffer, -1);
     }
     AHardwareBuffer_release(ahwb);
