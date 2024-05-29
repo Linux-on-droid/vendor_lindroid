@@ -4,6 +4,7 @@
 #include <android/hardware_buffer.h>
 #include <android/native_window.h>
 #include <private/android/AHardwareBufferHelpers.h>
+#include <sys/prctl.h>
 #include <utils/Log.h>
 #include <vndk/hardware_buffer.h>
 #include <vndk/window.h>
@@ -74,13 +75,17 @@ ndk::ScopedAStatus ComposerImpl::present(int64_t in_displayId, ndk::ScopedFileDe
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus ComposerImpl::setPowerMode(int32_t in_mode) {
-    ALOGI("%s: mode: %d", __FUNCTION__, in_mode);
+ndk::ScopedAStatus ComposerImpl::setPowerMode(int64_t in_displayId, int32_t in_mode) {
+    ALOGI("%s: Display: %" PRId64 " mode: %d", __FUNCTION__, in_displayId, in_mode);
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus ComposerImpl::setVsyncEnabled(int32_t in_enabled) {
-    ALOGI("%s: enabled: %d", __FUNCTION__, in_enabled);
+ndk::ScopedAStatus ComposerImpl::setVsyncEnabled(int64_t in_displayId, int32_t in_enabled) {
+    ALOGI("%s: Display: %" PRId64 " enabled: %d", __FUNCTION__, in_displayId, in_enabled);
+    auto display = mDisplays.find(in_displayId);
+    if (display != mDisplays.end()) {
+        display->second->mVsyncThread.enableCallback(in_enabled == 1);
+    }
     return ndk::ScopedAStatus::ok();
 }
 
@@ -196,6 +201,12 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
         targetDisplay->displayConfig = displayConfig;
         targetDisplay->plugged = false;
         targetDisplay->listener = new DisplayListener(targetDisplay);
+        targetDisplay->mVsyncThread.setCallback([&](int64_t timestamp) {
+            if (mCallbacks == nullptr)
+                return;
+            mCallbacks->onVsyncReceived(mSequenceId, displayId, timestamp);
+        });
+        targetDisplay->mVsyncThread.start(0, displayConfig.vsyncPeriod);
         mDisplays[displayId] = targetDisplay;
     }
 
@@ -221,10 +232,105 @@ void ComposerImpl::onDisplayDestroyed(int64_t displayId) {
     if (display != mDisplays.end()) {
         display->second->surface = nullptr;
         display->second->plugged = false;
+        display->second->mVsyncThread.stop();
         if (mCallbacks != nullptr)
             mCallbacks->onHotplugReceived(mSequenceId, displayId, false, displayId == 0);
     }
     mDisplays.erase(displayId);
+}
+
+int64_t VsyncThread::now() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    return int64_t(ts.tv_sec) * 1'000'000'000 + ts.tv_nsec;
+}
+
+bool VsyncThread::sleepUntil(int64_t t) {
+    struct timespec ts;
+    ts.tv_sec = t / 1'000'000'000;
+    ts.tv_nsec = t % 1'000'000'000;
+
+    while (true) {
+        int error = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, nullptr);
+        if (error) {
+            if (error == EINTR) {
+                continue;
+            }
+            return false;
+        } else {
+            return true;
+        }
+    }
+}
+
+void VsyncThread::start(int64_t firstVsync, int64_t period) {
+    mNextVsync = firstVsync;
+    mPeriod = period;
+    mStarted = true;
+    mThread = std::thread(&VsyncThread::vsyncLoop, this);
+}
+
+void VsyncThread::stop() {
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        mStarted = false;
+    }
+    mCondition.notify_all();
+    mThread.join();
+}
+
+void VsyncThread::setCallback(const vsync_callback_t &callback) {
+    std::lock_guard<std::mutex> lock(mMutex);
+    mCallback = callback;
+}
+
+void VsyncThread::enableCallback(bool enable) {
+    if (mCallbackEnabled == enable)
+        return;
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        mCallbackEnabled = enable;
+    }
+    mCondition.notify_all();
+}
+
+void VsyncThread::vsyncLoop() {
+    prctl(PR_SET_NAME, "VsyncThread", 0, 0, 0);
+
+    std::unique_lock<std::mutex> lock(mMutex);
+    if (!mStarted) {
+        return;
+    }
+
+    while (true) {
+        if (!mCallbackEnabled) {
+            mCondition.wait(lock, [this] { return mCallbackEnabled || !mStarted; });
+            if (!mStarted) {
+                break;
+            }
+        }
+
+        lock.unlock();
+
+        // adjust mNextVsync if necessary
+        int64_t t = now();
+        if (mNextVsync < t) {
+            int64_t n = (t - mNextVsync + mPeriod - 1) / mPeriod;
+            mNextVsync += mPeriod * n;
+        }
+        bool fire = sleepUntil(mNextVsync);
+
+        lock.lock();
+
+        if (fire) {
+            ALOGV("VsyncThread(%" PRId64 ")", mNextVsync);
+            if (mCallback) {
+                mCallback(mNextVsync);
+            }
+            mNextVsync += mPeriod;
+        }
+    }
 }
 
 } // namespace composer

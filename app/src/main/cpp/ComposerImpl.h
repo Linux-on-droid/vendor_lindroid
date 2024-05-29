@@ -1,5 +1,9 @@
 #pragma once
 
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+
 #include <gui/Surface.h>
 #include <ui/Fence.h>
 #include <ui/GraphicBuffer.h>
@@ -25,12 +29,40 @@ namespace vendor {
 namespace lindroid {
 namespace composer {
 
+typedef std::function<void(int64_t)> vsync_callback_t;
+
+class VsyncThread {
+public:
+    static int64_t now();
+    static bool sleepUntil(int64_t t);
+
+    void start(int64_t first, int64_t period);
+    void stop();
+    void setCallback(const vsync_callback_t &callback);
+    void enableCallback(bool enable);
+
+private:
+    void vsyncLoop();
+    bool waitUntilNextVsync();
+
+    std::thread mThread;
+    int64_t mNextVsync{0};
+    int64_t mPeriod{0};
+
+    std::mutex mMutex;
+    std::condition_variable mCondition;
+    bool mStarted{false};
+    vsync_callback_t mCallback;
+    bool mCallbackEnabled{false};
+};
+
 struct ComposerDisplay {
     sp<Surface> surface;
     ANativeWindow *nativeWindow;
     DisplayConfiguration displayConfig;
     bool plugged;
     sp<SurfaceListener> listener;
+    VsyncThread mVsyncThread;
 };
 
 class ComposerImpl : public BnComposer {
@@ -42,8 +74,8 @@ public:
     virtual ndk::ScopedAStatus acceptChanges(int64_t in_displayId) override;
     virtual ndk::ScopedAStatus getReleaseFence(int64_t in_displayId, ndk::ScopedFileDescriptor *_aidl_return) override;
     virtual ndk::ScopedAStatus present(int64_t in_displayId, ndk::ScopedFileDescriptor *_aidl_return) override;
-    virtual ndk::ScopedAStatus setPowerMode(int32_t in_mode) override;
-    virtual ndk::ScopedAStatus setVsyncEnabled(int32_t in_enabled) override;
+    virtual ndk::ScopedAStatus setPowerMode(int64_t in_displayId, int32_t in_mode) override;
+    virtual ndk::ScopedAStatus setVsyncEnabled(int64_t in_displayId, int32_t in_enabled) override;
     virtual ndk::ScopedAStatus setBuffer(int64_t in_displayId, const HardwareBuffer &in_buffer, int32_t in_fenceFd, int32_t *_aidl_return) override;
 
     void onSurfaceCreated(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
