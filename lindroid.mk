@@ -29,7 +29,8 @@ PRODUCT_PACKAGES += \
 # Hybris hwc compat
 PRODUCT_PACKAGES += \
     libhwc2_compat_layer \
-    libui_compat_layer
+    libui_compat_layer \
+    LindroidUI
 
 # LXC configs and default container
 $(call inherit-product, $(LOCAL_PATH)/lxc/lxc.mk)
