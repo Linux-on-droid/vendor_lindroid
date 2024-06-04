@@ -17,6 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.view.InputDevice;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -113,6 +114,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
+        if(motionEvent.getSource() == InputDevice.SOURCE_MOUSE) {
+            onGenericMotion(view, motionEvent);
+            return onHover(view, motionEvent);
+        }
+
         int pointerCount = motionEvent.getPointerCount();
         for (int i = 0; i < pointerCount; i++) {
             int pointerId = motionEvent.getPointerId(i);
