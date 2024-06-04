@@ -20,6 +20,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.PointerIcon;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -50,6 +51,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         sv.setOnHoverListener(this);
         sv.setOnGenericMotionListener(this);
         sh.addCallback(this);
+
+        // Hide pointer icon
+        sv.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
     }
 
     @Override
