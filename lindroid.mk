@@ -32,5 +32,11 @@ PRODUCT_PACKAGES += \
     libui_compat_layer \
     LindroidUI
 
+# IDC to ignore lindroid inputs on android side
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/configs/idc/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000a.idc \
+    $(LOCAL_PATH)/configs/idc/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000b.idc \
+    $(LOCAL_PATH)/configs/idc/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000c.idc
+
 # LXC configs and default container
 $(call inherit-product, $(LOCAL_PATH)/lxc/lxc.mk)
