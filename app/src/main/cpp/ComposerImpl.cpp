@@ -190,8 +190,14 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
     displayConfig.dpi.y = 320;
     displayConfig.vsyncPeriod = 16666667; // 60Hz
 
+    bool needRefresh = false;
     auto display = mDisplays.find(displayId);
     if (display != mDisplays.end()) {
+        if (display->second->plugged &&
+            (display->second->displayConfig.width != displayConfig.width ||
+             display->second->displayConfig.height != displayConfig.height)) {
+            needRefresh = true;
+        }
         display->second->nativeWindow = nativeWindow;
         display->second->surface = surface;
         display->second->displayConfig = displayConfig;
@@ -216,6 +222,9 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
     if (!mDisplays[displayId]->plugged && mCallbacks != nullptr) {
         mCallbacks->onHotplugReceived(mSequenceId, displayId, true, displayId == 0);
         mDisplays[displayId]->plugged = true;
+    }
+    if (needRefresh && mCallbacks != nullptr) {
+        mCallbacks->onRefreshReceived(mSequenceId, displayId);
     }
 }
 
