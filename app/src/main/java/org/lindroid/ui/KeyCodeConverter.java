@@ -61,7 +61,7 @@ public class KeyCodeConverter {
         keyCodeMap.put(KeyEvent.KEYCODE_ENTER, 28);
         keyCodeMap.put(KeyEvent.KEYCODE_BACK, 14);
         keyCodeMap.put(KeyEvent.KEYCODE_DEL, 111);
-        keyCodeMap.put(KeyEvent.KEYCODE_FORWARD_DEL, 111);
+        keyCodeMap.put(KeyEvent.KEYCODE_FORWARD_DEL, 14);
         keyCodeMap.put(KeyEvent.KEYCODE_ESCAPE, 1);
         keyCodeMap.put(KeyEvent.KEYCODE_CAPS_LOCK, 58);
         keyCodeMap.put(KeyEvent.KEYCODE_NUM_LOCK, 69);
