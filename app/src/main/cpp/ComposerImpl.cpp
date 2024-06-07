@@ -89,7 +89,7 @@ ndk::ScopedAStatus ComposerImpl::setVsyncEnabled(int64_t in_displayId, int32_t i
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareBuffer &hardwareBuffer, int32_t fenceFd, int32_t *_aidl_return) {
+ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareBuffer &hardwareBuffer, const ::ndk::ScopedFileDescriptor &in_acquireFence, int32_t *_aidl_return) {
     auto display = mDisplays.find(in_displayId);
     if (display != mDisplays.end()) {
         if (display->second->surface == nullptr) {
