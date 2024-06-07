@@ -5,6 +5,7 @@
 #include <thread>
 
 #include <gui/Surface.h>
+#include <ui/Fence.h>
 #include <ui/GraphicBuffer.h>
 #include <utils/Mutex.h>
 
@@ -62,8 +63,6 @@ struct ComposerDisplay {
     bool plugged;
     sp<SurfaceListener> listener;
     VsyncThread mVsyncThread;
-    int mCurrentFence = -1;
-    int mReleaseFence = -1;
 };
 
 class ComposerImpl : public BnComposer {

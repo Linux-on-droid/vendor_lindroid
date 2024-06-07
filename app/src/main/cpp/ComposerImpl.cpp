@@ -59,28 +59,18 @@ ndk::ScopedAStatus ComposerImpl::acceptChanges(int64_t in_displayId) {
 
 ndk::ScopedAStatus ComposerImpl::getReleaseFence(int64_t in_displayId, ndk::ScopedFileDescriptor *_aidl_return) {
     //ALOGI("%s: Display: %" PRId64 "", __FUNCTION__, in_displayId);
-    int fence = -1;
-    auto display = mDisplays.find(in_displayId);
-    if (display != mDisplays.end()) {
-        fence = display->second->mReleaseFence;
-        display->second->mReleaseFence = -1;
-    }
-    if (fence > 0) {
-        *_aidl_return = ndk::ScopedFileDescriptor(fence);
+    sp<Fence> fence = Fence::NO_FENCE;
+    if (fence->isValid()) {
+        *_aidl_return = ndk::ScopedFileDescriptor(fence->dup());
     }
     return ndk::ScopedAStatus::ok();
 }
 
 ndk::ScopedAStatus ComposerImpl::present(int64_t in_displayId, ndk::ScopedFileDescriptor *_aidl_return) {
     //ALOGI("%s: Display: %" PRId64 "", __FUNCTION__, in_displayId);
-    int fence = -1;
-    auto display = mDisplays.find(in_displayId);
-    if (display != mDisplays.end()) {
-        fence = display->second->mCurrentFence;
-        display->second->mCurrentFence = -1;
-    }
-    if (fence > 0) {
-        *_aidl_return = ndk::ScopedFileDescriptor(fence);
+    sp<Fence> fence = Fence::NO_FENCE;
+    if (fence->isValid()) {
+        *_aidl_return = ndk::ScopedFileDescriptor(fence->dup());
     }
     return ndk::ScopedAStatus::ok();
 }
@@ -137,8 +127,7 @@ ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareB
             // ALOGE("%s: Get NativeWindow Failed!", __FUNCTION__);
             return ndk::ScopedAStatus::ok();
         }
-        *_aidl_return = ANativeWindow_queueBuffer(mDisplays[in_displayId]->nativeWindow, buffer, dup(in_acquireFence.get()));
-        mDisplays[in_displayId]->mCurrentFence = dup(in_acquireFence.get());
+        *_aidl_return = ANativeWindow_queueBuffer(mDisplays[in_displayId]->nativeWindow, buffer, -1);
     }
     AHardwareBuffer_release(ahwb);
 
@@ -152,9 +141,10 @@ public:
     virtual ~DisplayListener() = default;
     virtual void onBufferReleased() {
         AHardwareBuffer *rawSourceBuffer;
+        int rawSourceFence;
         float texTransform[16];
 
-        status_t err = ANativeWindow_getLastQueuedBuffer(targetDisplay->nativeWindow, &rawSourceBuffer, &targetDisplay->mReleaseFence, texTransform);
+        status_t err = ANativeWindow_getLastQueuedBuffer(targetDisplay->nativeWindow, &rawSourceBuffer, &rawSourceFence, texTransform);
         if (err == NO_ERROR) {
             if (rawSourceBuffer != nullptr) {
                 AHardwareBuffer_release(rawSourceBuffer);
