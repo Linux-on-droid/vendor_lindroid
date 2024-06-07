@@ -20,7 +20,6 @@
 // perspectived
 
 cc_binary {
-
     name: "perspectived",
 
     srcs: [
@@ -28,7 +27,9 @@ cc_binary {
         "LXCContainerManager.cpp",
     ],
 
-    include_dirs: ["external/lxc/src", "vendor/lindroid/include"],
+    include_dirs: [
+        "external/lxc/src"
+    ],
 
     cflags: ["-DLOG_TAG=\"perspectived\""],
 
@@ -41,11 +42,10 @@ cc_binary {
         "libbinder_ndk",
         "vendor.lindroid.perspective-ndk",
     ],
-
 }
 
 // -----------------------------------------------------------------------------
-// perspective_sdk
+// perspective aidl interface
 
 aidl_interface {
     name: "vendor.lindroid.perspective",

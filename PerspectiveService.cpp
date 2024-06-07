@@ -15,93 +15,28 @@
  * limitations under the License.
  */
 
-#include <cutils/log.h>
+#include <utils/Log.h>
 
-#include <binder/ProcessState.h>
-#include <binder/IPCThreadState.h>
-#include <binder/IServiceManager.h>
-
-#include <android-base/logging.h>
 #include <android/binder_manager.h>
 #include <android/binder_process.h>
 
-
-#include "PerspectiveService.h"
 #include "LXCContainerManager.h"
 
-#define DEBUG 1
+using aidl::vendor::lindroid::perspective::LXCContainerManager;
 
-namespace aidl {
-namespace vendor {
-namespace lindroid {
-namespace perspective {
-
-/**
- * Name of the container under /data/maru/containers/
- */
-static const char *CONTAINER = "default";
-
-PerspectiveService::PerspectiveService() : mContainerManager(NULL) {
-    ALOGI("perspectived is starting...");
-
-    mContainerManager = new LXCContainerManager();
-}
-
-PerspectiveService::~PerspectiveService() {
-    mContainerManager = NULL;
-}
-
-bool PerspectiveService::start() {
-    ALOGD_IF(DEBUG, "running start()...");
-
-    return mContainerManager->start(CONTAINER);
-}
-
-bool PerspectiveService::stop() {
-    ALOGD_IF(DEBUG, "running stop()...");
-
-    return mContainerManager->stop(CONTAINER);
-}
-
-bool PerspectiveService::isRunning() {
-    ALOGD_IF(DEBUG, "running isRunning()...");
-
-    return mContainerManager->isRunning(CONTAINER);
-}
-
-}; // namespace android
-};
-};
-};
+#define SERVICE_NAME "perspective"
 
 int main(void) {
-    using namespace aidl::vendor::lindroid::perspective;
+    auto perspective = ndk::SharedRefBase::make<LXCContainerManager>();
 
-    // start up the Binder IPC thread pool
-   // sp<ProcessState> ps(ProcessState::self());
-   // ps->setThreadPoolMaxThreadCount(1);
-   // ps->startThreadPool();
+    binder_status_t status = AServiceManager_addService(perspective->asBinder().get(), SERVICE_NAME);
+    if (status != STATUS_OK) {
+        ALOGE("Could not register perspective binder service");
+        return EXIT_FAILURE;
+    }
 
-  //sp<PerspectiveService> perspect = new PerspectiveService();
-
-    // publish PerspectiveService
-  //  sp<IServiceManager> sm(defaultServiceManager());
- //   sm->addService(String16(PerspectiveService::getServiceName()), perspect, false);
-
-    // service Binder requests
- //   IPCThreadState::self()->joinThreadPool();
-
-      std::shared_ptr<PerspectiveService> perspect = ndk::SharedRefBase::make<PerspectiveService>();
-    ABinderProcess_setThreadPoolMaxThreadCount(0);
-
-        binder_status_t status = AServiceManager_addService(perspect->asBinder().get(), "perspective");
-		if (status != STATUS_OK) {
-	//		ALOGE("Could not register perspect binder service");
-            return EXIT_FAILURE;
-        }
-
-        ABinderProcess_joinThreadPool();
+    ABinderProcess_joinThreadPool();
 
     // should never get here
-    return -1;
+    return EXIT_FAILURE;
 }

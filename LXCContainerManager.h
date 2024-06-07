@@ -14,37 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef MARU_LXCCONTAINER_MANAGER_H
-#define MARU_LXCCONTAINER_MANAGER_H
+#pragma once
 
-#include "ContainerManager.h"
+#include <aidl/vendor/lindroid/perspective/BnPerspective.h>
 
 namespace aidl {
 namespace vendor {
 namespace lindroid {
 namespace perspective {
 
-class LXCContainerManager : public ContainerManager {
+class LXCContainerManager : public BnPerspective {
 public:
-    LXCContainerManager();
-
-    // ContainerManager interface
+    // BnPerspective interface
     // ------------------------------------------------------------------------
 
-    virtual bool start(const char* id);
-    virtual bool stop(const char* id);
-    virtual bool isRunning(const char* id);
+    virtual ndk::ScopedAStatus start(const std::string &id, bool *_aidl_return);
+    virtual ndk::ScopedAStatus stop(const std::string &id, bool *_aidl_return);
+    virtual ndk::ScopedAStatus isRunning(const std::string &id, bool *_aidl_return);
 
     // ------------------------------------------------------------------------
-
-protected:
-    // we are reference counted
-    virtual ~LXCContainerManager();
 };
 
-}; // namespace android
-};
-};
-};
-
-#endif // MARU_LXCCONTAINER_MANAGER_H
+}; // namespace perspective
+}; // namespace lindroid
+}; // namespace vendor
+}; // namespace aidl

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include <cutils/log.h>
 #include <lxc/attach_options.h>
 #include <lxc/lxccontainer.h>
 #include <sys/wait.h>
+#include <utils/Log.h>
 
 #include "LXCContainerManager.h"
 
@@ -121,27 +121,22 @@ static bool containerIsRunning(const char* id) {
     return ret;
 }
 
-LXCContainerManager::LXCContainerManager() {
-    // empty
+ndk::ScopedAStatus LXCContainerManager::start(const std::string &id, bool *_aidl_return) {
+    *_aidl_return = startContainer(id.c_str());
+    return ndk::ScopedAStatus::ok();
 }
 
-LXCContainerManager::~LXCContainerManager() {
-    // empty
+ndk::ScopedAStatus LXCContainerManager::stop(const std::string &id, bool *_aidl_return) {
+    *_aidl_return = stopContainer(id.c_str());
+    return ndk::ScopedAStatus::ok();
 }
 
-bool LXCContainerManager::start(const char* id) {
-    return startContainer(id);
+ndk::ScopedAStatus LXCContainerManager::isRunning(const std::string &id, bool *_aidl_return) {
+    *_aidl_return = containerIsRunning(id.c_str());
+    return ndk::ScopedAStatus::ok();
 }
 
-bool LXCContainerManager::stop(const char* id) {
-    return stopContainer(id);
-}
-
-bool LXCContainerManager::isRunning(const char *id) {
-    return containerIsRunning(id);
-}
-
-} // namespace android
-}
-}
-}
+} // namespace perspective
+} // namespace lindroid
+} // namespace vendor
+} // namespace aidl

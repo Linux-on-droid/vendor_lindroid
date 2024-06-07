@@ -20,6 +20,9 @@ package vendor.lindroid.perspective;
 /**
  * @hide
  */
-interface IPerspectiveServiceCallback {
-    oneway void onPerspectiveEvent(int event);
+interface IPerspective {
+    boolean start(String id);
+    boolean stop(String id);
+    boolean isRunning(String id);
+
 }
