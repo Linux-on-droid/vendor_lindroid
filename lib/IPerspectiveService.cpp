@@ -19,13 +19,15 @@
 
 #include <perspective/IPerspectiveService.h>
 
-namespace android {
+namespace aidl {
+namespace vendor {
+namespace lindroid {
+namespace perspective {
 
 enum {
     START = IBinder::FIRST_CALL_TRANSACTION,
     STOP,
     IS_RUNNING,
-    ENABLE_INPUT
 };
 
 /**
@@ -59,14 +61,6 @@ public:
         return reply.readInt32() != 0;
     }
 
-    virtual bool enableInput(bool enable) {
-        Parcel data, reply;
-        data.writeInterfaceToken(IPerspectiveService::getInterfaceDescriptor());
-        data.writeInt32(enable ? 1 : 0);
-        remote()->transact(ENABLE_INPUT, data, &reply);
-        return reply.readInt32() != 0;
-    }
-
 };
 
 IMPLEMENT_META_INTERFACE(PerspectiveService, "maru.PerspectiveService");
@@ -94,11 +88,6 @@ status_t BnPerspectiveService::onTransact(
             reply->writeInt32(isRunning() ? 1 : 0);
             return NO_ERROR;
         }
-        case ENABLE_INPUT: {
-            CHECK_INTERFACE(IPerspectiveService, data, reply);
-            reply->writeInt32(enableInput(data.readInt32() == 1) ? 1 : 0);
-            return NO_ERROR;
-        }
         default: {
             return BBinder::onTransact(code, data, reply, flags);
         }
@@ -108,3 +97,6 @@ status_t BnPerspectiveService::onTransact(
 }
 
 }; // namespace android
+};
+};
+};

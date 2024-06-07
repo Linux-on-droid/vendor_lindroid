@@ -19,7 +19,10 @@
 
 #include "ContainerManager.h"
 
-namespace android {
+namespace aidl {
+namespace vendor {
+namespace lindroid {
+namespace perspective {
 
 class LXCContainerManager : public ContainerManager {
 public:
@@ -31,7 +34,6 @@ public:
     virtual bool start(const char* id);
     virtual bool stop(const char* id);
     virtual bool isRunning(const char* id);
-    virtual bool enableInput(const char* id, const bool enable);
 
     // ------------------------------------------------------------------------
 
@@ -41,5 +43,8 @@ protected:
 };
 
 }; // namespace android
+};
+};
+};
 
 #endif // MARU_LXCCONTAINER_MANAGER_H

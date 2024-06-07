@@ -23,7 +23,10 @@
 
 #define DEBUG 1
 
-namespace android {
+namespace aidl {
+namespace vendor {
+namespace lindroid {
+namespace perspective {
 
 /*
  * We use a purely stateless approach to speaking with liblxc since container
@@ -118,26 +121,6 @@ static bool containerIsRunning(const char* id) {
     return ret;
 }
 
-static bool containerEnableInput(const char* id, const bool enable) {
-    struct lxc_container *c = initContainer(id);
-    if (!c) {
-        ALOGE("failed to enable input of container, can't init container");
-        return false;
-    }
-
-    const char *program = enable ? "/etc/maruos/enable-input" : "/etc/maruos/disable-input";
-    lxc_attach_options_t attach_options = LXC_ATTACH_OPTIONS_DEFAULT;
-    // Drop pid namespace when running lxc-attach to support old kernels.
-    attach_options.namespaces = CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC;
-    // The lxc_attach_command_t.argv in attach_options.h needs including
-    // program in argv[0]. And we must use NULL as the end of argv.
-    const char *argv[] = {"/bin/bash", "-c", program, NULL};
-    int ret = c->attach_run_wait(c, &attach_options, argv[0], argv);
-
-    freeContainer(c);
-    return WIFEXITED(ret);
-}
-
 LXCContainerManager::LXCContainerManager() {
     // empty
 }
@@ -158,8 +141,7 @@ bool LXCContainerManager::isRunning(const char *id) {
     return containerIsRunning(id);
 }
 
-bool LXCContainerManager::enableInput(const char *id, const bool enable) {
-    return containerEnableInput(id, enable);
-}
-
 } // namespace android
+}
+}
+}

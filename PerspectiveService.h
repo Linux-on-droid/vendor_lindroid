@@ -19,11 +19,15 @@
 #define MARU_PERSPECTIVE_SERVICE_H
 
 #include <utils/RefBase.h>
-#include <perspective/IPerspectiveService.h>
 
 #include "ContainerManager.h"
 
-namespace android {
+#include <aidl/vendor/lindroid/perspective/BnPerspectiveService.h>
+
+namespace aidl {
+namespace vendor {
+namespace lindroid {
+namespace perspective {
 
 class PerspectiveService : public BnPerspectiveService {
 public:
@@ -43,13 +47,15 @@ private:
     virtual bool start();
     virtual bool stop();
     virtual bool isRunning();
-    virtual bool enableInput(bool enable);
 
     // ------------------------------------------------------------
 
-    sp<ContainerManager> mContainerManager;
+    android::sp<ContainerManager> mContainerManager;
 };
 
 }; // namespace android
+};
+};
+}
 
 #endif // MARU_PERSPECTIVE_SERVICE_H

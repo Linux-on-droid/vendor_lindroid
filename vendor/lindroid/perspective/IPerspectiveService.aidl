@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 The Maru OS Project
+ * Copyright 2015-2016 Preetam J. D'Souza
+ * Copyright 2016 The Maru OS Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +15,20 @@
  * limitations under the License.
  */
 
-#ifndef MARU_CONTAINER_MANAGER_H
-#define MARU_CONTAINER_MANAGER_H
+package vendor.lindroid.perspective;
 
-#include <utils/RefBase.h>
+import vendor.lindroid.perspective.IPerspectiveServiceCallback;
 
-namespace aidl {
-namespace vendor {
-namespace lindroid {
-namespace perspective {
+/**
+ * @hide
+ */
+interface IPerspectiveService {
 
-class ContainerManager : public android::RefBase {
-public:
-    virtual bool start(const char* id) = 0;
-    virtual bool stop(const char* id) = 0;
-    virtual bool isRunning(const char* id) = 0;
+    void startDesktopPerspective();
 
-protected:
-    // we are reference counted
-    virtual ~ContainerManager(){};
-};
+    void stopDesktopPerspective();
 
-}; // namespace android
-};
-};
-};
+    boolean isDesktopRunning();
 
-#endif // MARU_CONTAINER_MANAGER_H
+    void registerCallback(IPerspectiveServiceCallback callback);
+}

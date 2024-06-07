@@ -21,12 +21,20 @@
 #include <binder/IPCThreadState.h>
 #include <binder/IServiceManager.h>
 
+#include <android-base/logging.h>
+#include <android/binder_manager.h>
+#include <android/binder_process.h>
+
+
 #include "PerspectiveService.h"
 #include "LXCContainerManager.h"
 
 #define DEBUG 1
 
-namespace android {
+namespace aidl {
+namespace vendor {
+namespace lindroid {
+namespace perspective {
 
 /**
  * Name of the container under /data/maru/containers/
@@ -61,30 +69,38 @@ bool PerspectiveService::isRunning() {
     return mContainerManager->isRunning(CONTAINER);
 }
 
-bool PerspectiveService::enableInput(bool enable) {
-    ALOGD_IF(DEBUG, "running enableInput(%s)...", (enable ? "true" : "false"));
-
-    return mContainerManager->enableInput(CONTAINER, enable);
-}
-
 }; // namespace android
+};
+};
+};
 
 int main(void) {
-    using namespace android;
+    using namespace aidl::vendor::lindroid::perspective;
 
     // start up the Binder IPC thread pool
-    sp<ProcessState> ps(ProcessState::self());
-    ps->setThreadPoolMaxThreadCount(1);
-    ps->startThreadPool();
+   // sp<ProcessState> ps(ProcessState::self());
+   // ps->setThreadPoolMaxThreadCount(1);
+   // ps->startThreadPool();
 
-    sp<PerspectiveService> perspect = new PerspectiveService();
+  //sp<PerspectiveService> perspect = new PerspectiveService();
 
     // publish PerspectiveService
-    sp<IServiceManager> sm(defaultServiceManager());
-    sm->addService(String16(PerspectiveService::getServiceName()), perspect, false);
+  //  sp<IServiceManager> sm(defaultServiceManager());
+ //   sm->addService(String16(PerspectiveService::getServiceName()), perspect, false);
 
     // service Binder requests
-    IPCThreadState::self()->joinThreadPool();
+ //   IPCThreadState::self()->joinThreadPool();
+
+      std::shared_ptr<PerspectiveService> perspect = ndk::SharedRefBase::make<PerspectiveService>();
+    ABinderProcess_setThreadPoolMaxThreadCount(0);
+
+        binder_status_t status = AServiceManager_addService(perspect->asBinder().get(), "perspective");
+		if (status != STATUS_OK) {
+	//		ALOGE("Could not register perspect binder service");
+            return EXIT_FAILURE;
+        }
+
+        ABinderProcess_joinThreadPool();
 
     // should never get here
     return -1;
