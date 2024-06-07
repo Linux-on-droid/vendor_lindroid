@@ -21,6 +21,8 @@
 
 cc_binary {
     name: "perspectived",
+    system_ext_specific: true,
+    init_rc: ["perspectived.rc"],
 
     srcs: [
         "PerspectiveService.cpp",
