@@ -19,7 +19,7 @@ interface IComposer {
     //void validate() 
 
     // Layer
-    int setBuffer(long displayId, in HardwareBuffer buffer, int fenceFd);
+    int setBuffer(long displayId, in HardwareBuffer buffer, in @nullable ParcelFileDescriptor fenceFd);
     //void setBlendMode(int mode);
     //setColor
     //setCompositionType
