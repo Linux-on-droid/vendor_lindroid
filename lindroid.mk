@@ -26,11 +26,12 @@ PRODUCT_PACKAGES += \
 # Debug libc for lxc container
 # PRODUCT_COPY_FILES += $(TARGET_COPY_OUT_SYSTEM)/../symbols/recovery/root/system/lib64/libc.so:$(TARGET_COPY_OUT_SYSTEM)/lindroid/libc.so \
 
-# Hybris hwc compat
+# Misc lindroid stuff
 PRODUCT_PACKAGES += \
     libhwc2_compat_layer \
     libui_compat_layer \
-    LindroidUI
+    LindroidUI \
+    perspectived
 
 # IDC to ignore lindroid inputs on android side
 PRODUCT_COPY_FILES += \
