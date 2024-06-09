@@ -1,7 +1,3 @@
-service lindroid_container_setup /system/bin/sh /system/bin/lindroid_container_setup.sh
-    user root
-    oneshot
-
 on init
     mkdir /sys/fs/cgroup/devices 0750 root system
     mount cgroup none /sys/fs/cgroup/devices devices
@@ -19,4 +15,3 @@ on post-fs-data
     mkdir /data/lindroid/lxc/nics 0770 system system
     mkdir /data/lindroid/lxc/run 0770 system system
     mkdir /data/lindroid/lxc/rootfs 0770 system system
-    start lindroid_container_setup
