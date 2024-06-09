@@ -12,7 +12,7 @@ lxc.mount.entry = /sdcard mnt/sdcard none bind,optional,rw,create=dir
 lxc.pty.max = 1024
 
 # CGroup allowlist
-lxc.cgroup.devices.deny = a
+#lxc.cgroup.devices.deny = a
 ## Allow any mknod (but not reading/writing the node)
 lxc.cgroup.devices.allow = c *:* m
 lxc.cgroup.devices.allow = b *:* m
@@ -45,9 +45,15 @@ lxc.mount.entry = cgroup2 /sys/fs/cgroup cgroup2 defaults 0 0
 lxc.mount.entry = /proc proc none bind,optional,rw,create=dir
 lxc.mount.entry = /tmp tmp none bind,optional,rw,create=dir
 lxc.mount.entry = /vendor vendor none bind,optional,rw,create=dir
+lxc.mount.entry = /vendor_dlkm vendor_dlkm none bind,optional,rw,create=dir
 lxc.mount.entry = /system system none bind,optional,rw,create=dir
+lxc.mount.entry = /system_dlkm system_dlkm none bind,optional,rw,create=dir
 lxc.mount.entry = /system_ext system_ext none bind,optional,rw,create=dir
+lxc.mount.entry = /product product none bind,optional,rw,create=dir
+lxc.mount.entry = /odm odm none bind,optional,rw,create=dir
+lxc.mount.entry = /odm_dlkm odm_dlkm none bind,optional,rw,create=dir
 lxc.mount.entry = /apex apex none rbind,optional,rw,create=dir
+lxc.mount.entry = /linkerconfig linkerconfig none rbind,optional,rw,create=dir
 
 lxc.mount.entry = /dev/socket dev/socket none bind,optional,rw,create=dir
 lxc.mount.entry = /dev/__properties__ dev/__properties__ none bind,optional,rw,create=dir
