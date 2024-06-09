@@ -53,7 +53,7 @@ lxc.mount.entry = /product product none bind,optional,rw,create=dir
 lxc.mount.entry = /odm odm none bind,optional,rw,create=dir
 lxc.mount.entry = /odm_dlkm odm_dlkm none bind,optional,rw,create=dir
 lxc.mount.entry = /apex apex none rbind,optional,rw,create=dir
-lxc.mount.entry = /linkerconfig linkerconfig none rbind,optional,rw,create=dir
+#lxc.mount.entry = /linkerconfig linkerconfig none rbind,optional,rw,create=dir TODO enabling this breaks finding system libs, disabling this breaks finding apex libs...
 
 lxc.mount.entry = /dev/socket dev/socket none bind,optional,rw,create=dir
 lxc.mount.entry = /dev/__properties__ dev/__properties__ none bind,optional,rw,create=dir
