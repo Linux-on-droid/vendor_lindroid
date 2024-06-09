@@ -1,5 +1,5 @@
 # Container specific configuration
-lxc.rootfs.path = dir:/data/lindroid/lxc/container/default/rootfs
+lxc.rootfs.path = overlayfs:/data/lindroid/lxc/rootfs_ro:/data/lindroid/lxc/container/default/rootfs
 lxc.uts.name = default
 
 # Network configuration
