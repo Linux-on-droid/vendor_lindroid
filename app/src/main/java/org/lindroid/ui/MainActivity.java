@@ -16,9 +16,14 @@ import static org.lindroid.ui.NativeLib.nativeSurfaceDestroyed;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.view.InputDevice;
 import android.os.Bundle;
+import android.os.RemoteException;
+import android.util.Log;
+import android.os.IBinder;
+import android.os.ServiceManager;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.PointerIcon;
@@ -30,8 +35,15 @@ import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 
+import vendor.lindroid.perspective.IPerspective;
+
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnTouchListener, View.OnHoverListener, View.OnGenericMotionListener {
+    private static final String TAG = "Lindroid";
+    private static final String mContainerName = "default";
     private static final long DISPLAY_ID = 0;
+    private IPerspective mPerspective;
+
+    private static final String AIDL_SERVICE_NAME = "perspective";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +67,48 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         // Hide pointer icon
         sv.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
+
+        // Get perspective service
+        final IBinder binder = ServiceManager.getService(AIDL_SERVICE_NAME);
+        if (binder == null) {
+            Log.e(TAG, "Failed to get binder from ServiceManager");
+            new AlertDialog.Builder(this)
+                .setTitle("Unsupported System")
+                .setMessage("This system does not support Lindroid.")
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    dialog.dismiss();
+                    finish();
+                })
+                .setIcon(R.drawable.ic_warning)
+                .show();
+            return;
+        } else {
+            mPerspective = IPerspective.Stub.asInterface(binder);
+        }
+
+        // Check if container is running
+        try {
+            if(!mPerspective.isRunning(mContainerName)) {
+                new AlertDialog.Builder(this)
+                    .setTitle("Container isn't running")
+                    .setMessage("Lindroid container currently isnt running, do you want to start it?.")
+                    .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                        try {
+                            mPerspective.start(mContainerName);
+                        } catch (RemoteException e) {
+                            Log.e(TAG, "RemoteException in start", e);
+                        }
+                    })
+                    .setNegativeButton(android.R.string.cancel, (dialog, which) -> {
+                    dialog.dismiss();
+                    finish();
+                    })
+                    .setIcon(R.drawable.ic_help)
+                    .show();
+            }
+        } catch (RemoteException e) {
+            Log.e(TAG, "RemoteException in isRunning", e);
+        }
     }
 
     @Override

@@ -9,6 +9,7 @@ android_app {
     static_libs: [
         "androidx.appcompat_appcompat",
         "com.google.android.material_material",
+        "vendor.lindroid.perspective-java",
     ],
     jni_libs: [
         "libjni_lindroidui",
