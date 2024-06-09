@@ -1,0 +1,24 @@
+aidl_interface {
+    name: "vendor.lindroid.composer",
+    system_ext_specific: true,
+    srcs: [ "vendor/lindroid/composer/*.aidl" ],
+    imports: [
+        "android.hardware.graphics.common-V3",
+    ],
+
+    unstable: true,
+    // cheat around setting a version
+    owner: "lindroid",
+    backend: {
+        java: {
+            enabled: true,
+            platform_apis: true,
+        },
+        cpp: {
+            enabled: false,
+        },
+        ndk: {
+            enabled: true,
+        },
+    },
+}
