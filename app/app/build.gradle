@@ -2,6 +2,10 @@ plugins {
     id 'com.android.application'
 }
 
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
 android {
     namespace 'org.lindroid.ui'
     compileSdk 34
@@ -24,15 +28,20 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    externalNativeBuild {
-        cmake {
-            path file('src/main/cpp/CMakeLists.txt')
-            version '3.22.1'
+    signingConfigs {
+        debug {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file("../" + keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
         }
     }
 }
 
 dependencies {
+    compileOnly fileTree(dir: 'system_libs/', include: ['framework.jar'])
+    implementation fileTree(dir: 'system_libs/', include: ['vendor.lindroid.perspective-java.jar'])
+
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.12.0'
 }
