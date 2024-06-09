@@ -45,28 +45,3 @@ cc_binary {
         "vendor.lindroid.perspective-ndk",
     ],
 }
-
-// -----------------------------------------------------------------------------
-// perspective aidl interface
-
-aidl_interface {
-    name: "vendor.lindroid.perspective",
-    system_ext_specific: true,
-    srcs: [ "vendor/lindroid/perspective/*.aidl" ],
-
-    unstable: true,
-    // cheat around setting a version
-    owner: "lindroid",
-    backend: {
-        java: {
-            enabled: true,
-            platform_apis: true,
-        },
-        cpp: {
-            enabled: false,
-        },
-        ndk: {
-            enabled: true,
-        },
-    },
-}

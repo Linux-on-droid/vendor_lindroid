@@ -1,5 +1,4 @@
 hidl_package_root {
     name: "vendor.lindroid",
-    path: "hardware/lindroid/interfaces",
+    path: "vendor/lindroid/interfaces",
 }
-
