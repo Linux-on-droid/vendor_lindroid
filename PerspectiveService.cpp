@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <utils/Log.h>
 
 #include <android/binder_manager.h>
@@ -27,6 +30,7 @@ using aidl::vendor::lindroid::perspective::LXCContainerManager;
 #define SERVICE_NAME "perspective"
 
 int main(void) {
+    umask(0000);
     auto perspective = ndk::SharedRefBase::make<LXCContainerManager>();
 
     binder_status_t status = AServiceManager_addService(perspective->asBinder().get(), SERVICE_NAME);
