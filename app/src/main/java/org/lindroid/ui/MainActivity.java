@@ -113,6 +113,37 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     @Override
+    public void onBackPressed() {
+        try {
+            if(mPerspective.isRunning(mContainerName)) {
+                new MaterialAlertDialogBuilder(this)
+                    .setTitle("Stop Linux subsystem")
+                    .setMessage("Do you want to stop Linux subsystem?")
+                    .setPositiveButton(R.string.yes, (dialog, which) -> {
+                        try {
+                            mPerspective.stop(mContainerName);
+                        } catch (RemoteException e) {
+                            Log.e(TAG, "RemoteException in start", e);
+                        }
+                        dialog.dismiss();
+                        finish();
+                    })
+                    .setNeutralButton(android.R.string.cancel, (dialog, which) -> {
+                        dialog.dismiss();
+                    })
+                    .setNegativeButton(R.string.no, (dialog, which) -> {
+                        super.onBackPressed();
+                    })
+                    .show();
+            } else {
+                finish();
+            }
+        } catch (RemoteException e) {
+            Log.e(TAG, "RemoteException in isRunning", e);
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         // Lets never destroy primary display
