@@ -23,8 +23,8 @@ PRODUCT_PACKAGES += \
     lxc_unfreeze \
     lxc_unshare
 
-# Debug libc for lxc container
-# PRODUCT_COPY_FILES += $(TARGET_COPY_OUT_SYSTEM)/../symbols/recovery/root/system/lib64/libc.so:$(TARGET_COPY_OUT_SYSTEM)/lindroid/libc.so \
+# Hacked libc for lxc container
+PRODUCT_COPY_FILES += $(LOCAL_PATH)/prebuilt/libc.so:$(TARGET_COPY_OUT_SYSTEM)/lindroid/libc.so \
 
 # Misc lindroid stuff
 PRODUCT_PACKAGES += \
