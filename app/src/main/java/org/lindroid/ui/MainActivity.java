@@ -13,6 +13,7 @@ import static org.lindroid.ui.NativeLib.nativeSurfaceChanged;
 import static org.lindroid.ui.NativeLib.nativeSurfaceCreated;
 import static org.lindroid.ui.NativeLib.nativeSurfaceDestroyed;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -72,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         final IBinder binder = ServiceManager.getService(AIDL_SERVICE_NAME);
         if (binder == null) {
             Log.e(TAG, "Failed to get binder from ServiceManager");
-            new AlertDialog.Builder(this)
+            new MaterialAlertDialogBuilder(this)
                 .setTitle("Unsupported System")
                 .setMessage("This system does not support Lindroid.")
                 .setPositiveButton(android.R.string.ok, (dialog, which) -> {
@@ -89,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         // Check if container is running
         try {
             if(!mPerspective.isRunning(mContainerName)) {
-                new AlertDialog.Builder(this)
+                new MaterialAlertDialogBuilder(this)
                     .setTitle("Container isn't running")
                     .setMessage("Lindroid container currently isnt running, do you want to start it?.")
                     .setPositiveButton(android.R.string.ok, (dialog, which) -> {
