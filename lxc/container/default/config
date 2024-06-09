@@ -12,7 +12,7 @@ lxc.mount.entry = /sdcard mnt/sdcard none bind,optional,rw,create=dir
 lxc.pty.max = 1024
 
 # CGroup allowlist
-#lxc.cgroup.devices.deny = a
+#lxc.cgroup.devices.deny = a TODO do not allow all device operations by default
 ## Allow any mknod (but not reading/writing the node)
 lxc.cgroup.devices.allow = c *:* m
 lxc.cgroup.devices.allow = b *:* m
