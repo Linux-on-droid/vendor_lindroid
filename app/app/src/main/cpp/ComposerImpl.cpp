@@ -182,7 +182,7 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
     ALOGI("%s: Display: %" PRId64 ", Width: %d, Height: %d", __FUNCTION__, displayId, ANativeWindow_getWidth(nativeWindow), ANativeWindow_getHeight(nativeWindow));
     DisplayConfiguration displayConfig;
     displayConfig.configId = 0;
-    displayConfig.displayId = 0;
+    displayConfig.displayId = displayId;
     displayConfig.width = ANativeWindow_getWidth(nativeWindow);
     displayConfig.height = ANativeWindow_getHeight(nativeWindow);
     displayConfig.dpi.x = 320;

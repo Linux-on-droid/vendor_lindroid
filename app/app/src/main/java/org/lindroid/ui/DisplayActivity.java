@@ -26,22 +26,27 @@ import android.view.WindowInsetsController;
 
 import vendor.lindroid.perspective.IPerspective;
 
-public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnTouchListener, View.OnHoverListener, View.OnGenericMotionListener {
+public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnTouchListener, View.OnHoverListener, View.OnGenericMotionListener {
     private static final String TAG = "Lindroid";
-    private static final String mContainerName = "default";
-    private static final long DISPLAY_ID = 0;
+    private String mContainerName = "default";
+    private long mDisplayID = 0;
     private IPerspective mPerspective;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.display_activity);
         final WindowInsetsController controller = getWindow().getInsetsController();
         if (controller != null) {
             controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
             controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         }
+    }
+
+    public void start(long displayID, String containerName) {
+        mDisplayID = displayID;
+        mContainerName = containerName;
 
         SurfaceView sv = findViewById(R.id.surfaceView);
         SurfaceHolder sh = sv.getHolder();
@@ -131,8 +136,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     protected void onDestroy() {
         super.onDestroy();
         // Lets never destroy primary display
-        if (DISPLAY_ID != 0) {
-            nativeDisplayDestroyed(DISPLAY_ID);
+        if (mDisplayID != 0) {
+            nativeDisplayDestroyed(mDisplayID);
         }
     }
 
@@ -143,9 +148,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             int hScroll = (int) motionEvent.getAxisValue(MotionEvent.AXIS_HSCROLL);
 
             if (vScroll != 0)
-                nativePointerScrollEvent(DISPLAY_ID, vScroll, true);
+                nativePointerScrollEvent(mDisplayID, vScroll, true);
             else if (hScroll != 0)
-                nativePointerScrollEvent(DISPLAY_ID, hScroll, false);
+                nativePointerScrollEvent(mDisplayID, hScroll, false);
         }
 
         if (motionEvent.getAction() == MotionEvent.ACTION_BUTTON_PRESS ||
@@ -155,19 +160,19 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             boolean isDown = motionEvent.getAction() == MotionEvent.ACTION_BUTTON_PRESS;
             switch (motionEvent.getActionButton()) {
                 case MotionEvent.BUTTON_PRIMARY:
-                    nativePointerButtonEvent(DISPLAY_ID, 0x110, x, y, isDown);
+                    nativePointerButtonEvent(mDisplayID, 0x110, x, y, isDown);
                     break;
                 case MotionEvent.BUTTON_SECONDARY:
-                    nativePointerButtonEvent(DISPLAY_ID, 0x111, x, y, isDown);
+                    nativePointerButtonEvent(mDisplayID, 0x111, x, y, isDown);
                     break;
                 case MotionEvent.BUTTON_TERTIARY:
-                    nativePointerButtonEvent(DISPLAY_ID, 0x112, x, y, isDown);
+                    nativePointerButtonEvent(mDisplayID, 0x112, x, y, isDown);
                     break;
                 case MotionEvent.BUTTON_BACK:
-                    nativePointerButtonEvent(DISPLAY_ID, 0x116, x, y, isDown);
+                    nativePointerButtonEvent(mDisplayID, 0x116, x, y, isDown);
                     break;
                 case MotionEvent.BUTTON_FORWARD:
-                    nativePointerButtonEvent(DISPLAY_ID, 0x115, x, y, isDown);
+                    nativePointerButtonEvent(mDisplayID, 0x115, x, y, isDown);
                     break;
             }
         }
@@ -178,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public boolean onHover(View view, MotionEvent motionEvent) {
         int x = (int) motionEvent.getX(0);
         int y = (int) motionEvent.getY(0);
-        nativePointerMotionEvent(DISPLAY_ID, x, y);
+        nativePointerMotionEvent(mDisplayID, x, y);
         return true;
     }
 
@@ -199,20 +204,20 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             if (action == MotionEvent.ACTION_MOVE ||
                     action == MotionEvent.ACTION_DOWN ||
                     action == MotionEvent.ACTION_UP)
-                nativeTouchEvent(DISPLAY_ID, pointerId, action, pressure, x, y);
+                nativeTouchEvent(mDisplayID, pointerId, action, pressure, x, y);
         }
         return true;
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        nativeKeyEvent(DISPLAY_ID, convertKeyCode(keyCode), true);
+        nativeKeyEvent(mDisplayID, convertKeyCode(keyCode), true);
         return super.onKeyDown(keyCode, event);
     }
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        nativeKeyEvent(DISPLAY_ID, convertKeyCode(keyCode), false);
+        nativeKeyEvent(mDisplayID, convertKeyCode(keyCode), false);
         return super.onKeyUp(keyCode, event);
     }
 
@@ -225,7 +230,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public void surfaceCreated(@NonNull SurfaceHolder holder) {
         Surface surface = holder.getSurface();
         if (surface != null) {
-            nativeSurfaceCreated(DISPLAY_ID, surface);
+            nativeSurfaceCreated(mDisplayID, surface);
         }
     }
 
@@ -233,9 +238,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
         Surface surface = holder.getSurface();
         if (surface != null) {
-            nativeStopInputDevice(DISPLAY_ID);
-            nativeSurfaceChanged(DISPLAY_ID, surface);
-            nativeReconfigureInputDevice(DISPLAY_ID, w, h);
+            nativeStopInputDevice(mDisplayID);
+            nativeSurfaceChanged(mDisplayID, surface);
+            nativeReconfigureInputDevice(mDisplayID, w, h);
         }
     }
 
@@ -243,8 +248,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
         Surface surface = holder.getSurface();
         if (surface != null) {
-            nativeSurfaceDestroyed(DISPLAY_ID, surface);
-            nativeStopInputDevice(DISPLAY_ID);
+            nativeSurfaceDestroyed(mDisplayID, surface);
+            nativeStopInputDevice(mDisplayID);
         }
     }
 }

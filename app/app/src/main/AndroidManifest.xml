@@ -13,7 +13,7 @@
         android:theme="@style/Theme.Lindroid"
         android:persistent="true">
         <activity
-            android:name=".MainActivity"
+            android:name=".PrimaryDisplayActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -21,10 +21,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".SecondaryDisplayActivity"
+            android:launchMode="singleTask"
+            android:taskAffinity="cover.container"/>
         <service
             android:name=".HardwareService"
             android:exported="true"/>
 
+        <meta-data
+            android:name="android.allow_multiple_resumed_activities"
+            android:value="true" />
     </application>
 
 </manifest>
