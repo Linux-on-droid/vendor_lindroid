@@ -8,6 +8,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.view.Display;
 import android.view.InputDevice;
 import android.os.Bundle;
 import android.os.RemoteException;
@@ -239,7 +240,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         Surface surface = holder.getSurface();
         if (surface != null) {
             nativeStopInputDevice(mDisplayID);
-            nativeSurfaceChanged(mDisplayID, surface);
+            nativeSurfaceChanged(mDisplayID, surface, getResources().getConfiguration().densityDpi);
             nativeReconfigureInputDevice(mDisplayID, w, h);
         }
     }

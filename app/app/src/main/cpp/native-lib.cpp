@@ -62,14 +62,12 @@ Java_org_lindroid_ui_NativeLib_nativeSurfaceCreated(
         return;
     }
     composer->onSurfaceCreated(displayId, sf, nativeWindow);
-
-    ALOGI("SurfaceCreated: Width: %d, Height: %d", ANativeWindow_getWidth(nativeWindow), ANativeWindow_getHeight(nativeWindow));
 }
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeSurfaceChanged(
     JNIEnv *env, jobject /* this */,
-    jlong displayId, jobject surface) {
+    jlong displayId, jobject surface, jint dpi) {
 
     sp<Surface> sf = android_view_Surface_getSurface(env, surface);
     if (sf == nullptr) {
@@ -91,9 +89,7 @@ Java_org_lindroid_ui_NativeLib_nativeSurfaceChanged(
         ALOGE("Composer is not initialized!");
         return;
     }
-    composer->onSurfaceChanged(displayId, sf, nativeWindow);
-
-    ALOGE("SurfaceChanged: Width: %d, Height: %d", ANativeWindow_getWidth(nativeWindow), ANativeWindow_getHeight(nativeWindow));
+    composer->onSurfaceChanged(displayId, sf, nativeWindow, dpi);
 }
 
 extern "C" void

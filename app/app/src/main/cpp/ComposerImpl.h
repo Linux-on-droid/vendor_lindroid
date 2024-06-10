@@ -79,7 +79,7 @@ public:
     virtual ndk::ScopedAStatus setBuffer(int64_t in_displayId, const HardwareBuffer &in_buffer, const ::ndk::ScopedFileDescriptor &in_fenceFd, int32_t *_aidl_return) override;
 
     void onSurfaceCreated(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
-    void onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
+    void onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow, int dpi);
     void onSurfaceDestroyed(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
     void onDisplayDestroyed(int64_t displayId);
 
