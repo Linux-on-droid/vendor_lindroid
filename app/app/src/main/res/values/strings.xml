@@ -2,4 +2,12 @@
     <string name="app_name">Lindroid</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="unsupported_title">Unsupported System</string>
+    <string name="unsupported_message">This system does not support Lindroid.</string>
+    <string name="not_running_title">Container isn\'t running</string>
+    <string name="not_running_message">Lindroid container currently isn\'t running, do you want to start it?.</string>
+    <string name="stop_title">Stop Linux subsystem</string>
+    <string name="stop_message">Do you want to stop the Linux subsystem?</string>
+
+
 </resources>

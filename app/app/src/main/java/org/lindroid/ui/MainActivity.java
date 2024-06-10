@@ -1,24 +1,13 @@
 package org.lindroid.ui;
 
+import static org.lindroid.ui.Constants.PERSPECTIVE_SERVICE_NAME;
 import static org.lindroid.ui.KeyCodeConverter.convertKeyCode;
-import static org.lindroid.ui.NativeLib.nativeDisplayDestroyed;
-import static org.lindroid.ui.NativeLib.nativeKeyEvent;
-import static org.lindroid.ui.NativeLib.nativeTouchEvent;
-import static org.lindroid.ui.NativeLib.nativePointerButtonEvent;
-import static org.lindroid.ui.NativeLib.nativePointerMotionEvent;
-import static org.lindroid.ui.NativeLib.nativePointerScrollEvent;
-import static org.lindroid.ui.NativeLib.nativeReconfigureInputDevice;
-import static org.lindroid.ui.NativeLib.nativeStopInputDevice;
-import static org.lindroid.ui.NativeLib.nativeSurfaceChanged;
-import static org.lindroid.ui.NativeLib.nativeSurfaceCreated;
-import static org.lindroid.ui.NativeLib.nativeSurfaceDestroyed;
+import static org.lindroid.ui.NativeLib.*;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.AlertDialog;
-import android.content.Intent;
 import android.view.InputDevice;
 import android.os.Bundle;
 import android.os.RemoteException;
@@ -34,7 +23,6 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
-import android.view.WindowManager;
 
 import vendor.lindroid.perspective.IPerspective;
 
@@ -44,7 +32,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private static final long DISPLAY_ID = 0;
     private IPerspective mPerspective;
 
-    private static final String AIDL_SERVICE_NAME = "perspective";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,9 +43,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         }
 
-        if (!HardwareService.isInstanceCreated()) {
-            startService(new Intent(this, HardwareService.class));
-        }
         SurfaceView sv = findViewById(R.id.surfaceView);
         SurfaceHolder sh = sv.getHolder();
         sv.setOnTouchListener(this);
@@ -70,18 +54,18 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         sv.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
 
         // Get perspective service
-        final IBinder binder = ServiceManager.getService(AIDL_SERVICE_NAME);
+        final IBinder binder = ServiceManager.getService(PERSPECTIVE_SERVICE_NAME);
         if (binder == null) {
             Log.e(TAG, "Failed to get binder from ServiceManager");
             new MaterialAlertDialogBuilder(this)
-                .setTitle("Unsupported System")
-                .setMessage("This system does not support Lindroid.")
-                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                    dialog.dismiss();
-                    finish();
-                })
-                .setIcon(R.drawable.ic_warning)
-                .show();
+                    .setTitle(R.string.unsupported_title)
+                    .setMessage(R.string.unsupported_message)
+                    .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                        dialog.dismiss();
+                        finish();
+                    })
+                    .setIcon(R.drawable.ic_warning)
+                    .show();
             return;
         } else {
             mPerspective = IPerspective.Stub.asInterface(binder);
@@ -91,21 +75,21 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         try {
             if(!mPerspective.isRunning(mContainerName)) {
                 new MaterialAlertDialogBuilder(this)
-                    .setTitle("Container isn't running")
-                    .setMessage("Lindroid container currently isnt running, do you want to start it?.")
-                    .setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                        try {
-                            mPerspective.start(mContainerName);
-                        } catch (RemoteException e) {
-                            Log.e(TAG, "RemoteException in start", e);
-                        }
-                    })
-                    .setNegativeButton(android.R.string.cancel, (dialog, which) -> {
-                    dialog.dismiss();
-                    finish();
-                    })
-                    .setIcon(R.drawable.ic_help)
-                    .show();
+                        .setTitle(R.string.not_running_title)
+                        .setMessage(R.string.not_running_message)
+                        .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                            try {
+                                mPerspective.start(mContainerName);
+                            } catch (RemoteException e) {
+                                Log.e(TAG, "RemoteException in start", e);
+                            }
+                        })
+                        .setNegativeButton(android.R.string.cancel, (dialog, which) -> {
+                            dialog.dismiss();
+                            finish();
+                        })
+                        .setIcon(R.drawable.ic_help)
+                        .show();
             }
         } catch (RemoteException e) {
             Log.e(TAG, "RemoteException in isRunning", e);
@@ -117,24 +101,24 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         try {
             if(mPerspective.isRunning(mContainerName)) {
                 new MaterialAlertDialogBuilder(this)
-                    .setTitle("Stop Linux subsystem")
-                    .setMessage("Do you want to stop Linux subsystem?")
-                    .setPositiveButton(R.string.yes, (dialog, which) -> {
-                        try {
-                            mPerspective.stop(mContainerName);
-                        } catch (RemoteException e) {
-                            Log.e(TAG, "RemoteException in start", e);
-                        }
-                        dialog.dismiss();
-                        finish();
-                    })
-                    .setNeutralButton(android.R.string.cancel, (dialog, which) -> {
-                        dialog.dismiss();
-                    })
-                    .setNegativeButton(R.string.no, (dialog, which) -> {
-                        super.onBackPressed();
-                    })
-                    .show();
+                        .setTitle(R.string.stop_title)
+                        .setMessage(R.string.stop_message)
+                        .setPositiveButton(R.string.yes, (dialog, which) -> {
+                            try {
+                                mPerspective.stop(mContainerName);
+                            } catch (RemoteException e) {
+                                Log.e(TAG, "RemoteException in start", e);
+                            }
+                            dialog.dismiss();
+                            finish();
+                        })
+                        .setNeutralButton(android.R.string.cancel, (dialog, which) -> {
+                            dialog.dismiss();
+                        })
+                        .setNegativeButton(R.string.no, (dialog, which) -> {
+                            super.onBackPressed();
+                        })
+                        .show();
             } else {
                 finish();
             }
