@@ -32,6 +32,8 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     private String mContainerName = "default";
     private long mDisplayID = 0;
     private IPerspective mPerspective;
+    private int mPreviousWidth = 0;
+    private int mPreviousHeight = 0;
 
 
     @Override
@@ -139,6 +141,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         // Lets never destroy primary display
         if (mDisplayID != 0) {
             nativeDisplayDestroyed(mDisplayID);
+            nativeStopInputDevice(mDisplayID);
         }
     }
 
@@ -239,9 +242,12 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
         Surface surface = holder.getSurface();
         if (surface != null) {
-            nativeStopInputDevice(mDisplayID);
             nativeSurfaceChanged(mDisplayID, surface, getResources().getConfiguration().densityDpi);
-            nativeReconfigureInputDevice(mDisplayID, w, h);
+            if (mPreviousWidth != w || mPreviousHeight != h) {
+                nativeReconfigureInputDevice(mDisplayID, w, h);
+                mPreviousWidth = w;
+                mPreviousHeight = h;
+            }
         }
     }
 
@@ -250,7 +256,6 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         Surface surface = holder.getSurface();
         if (surface != null) {
             nativeSurfaceDestroyed(mDisplayID, surface);
-            nativeStopInputDevice(mDisplayID);
         }
     }
 }
