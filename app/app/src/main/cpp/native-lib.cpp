@@ -67,7 +67,7 @@ Java_org_lindroid_ui_NativeLib_nativeSurfaceCreated(
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeSurfaceChanged(
     JNIEnv *env, jobject /* this */,
-    jlong displayId, jobject surface, jint dpi) {
+    jlong displayId, jobject surface, jint dpi, jfloat refresh) {
 
     sp<Surface> sf = android_view_Surface_getSurface(env, surface);
     if (sf == nullptr) {
@@ -89,7 +89,7 @@ Java_org_lindroid_ui_NativeLib_nativeSurfaceChanged(
         ALOGE("Composer is not initialized!");
         return;
     }
-    composer->onSurfaceChanged(displayId, sf, nativeWindow, dpi);
+    composer->onSurfaceChanged(displayId, sf, nativeWindow, dpi, refresh);
 }
 
 extern "C" void

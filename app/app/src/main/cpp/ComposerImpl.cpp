@@ -174,7 +174,7 @@ void ComposerImpl::onSurfaceCreated(int64_t displayId, sp<Surface> surface, ANat
     //TODO: Do something with this information
 }
 
-void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow, int dpi) {
+void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow, int dpi, float refresh) {
     if (nativeWindow == nullptr) {
         ALOGE("%s: Get ANativeWindow ERROR!", __FUNCTION__);
         return;
@@ -183,7 +183,8 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
         ALOGE("%s: Get Surface ERROR!", __FUNCTION__);
         return;
     }
-    ALOGI("%s: Display: %" PRId64 ", Width: %d, Height: %d, dpi: %d", __FUNCTION__, displayId, ANativeWindow_getWidth(nativeWindow), ANativeWindow_getHeight(nativeWindow), dpi);
+    ALOGI("%s: Display: %" PRId64 ", Width: %d, Height: %d, dpi: %d, refreshRate: %f", __FUNCTION__, 
+        displayId, ANativeWindow_getWidth(nativeWindow), ANativeWindow_getHeight(nativeWindow), dpi, refresh);
     DisplayConfiguration displayConfig;
     displayConfig.configId = 0;
     displayConfig.displayId = displayId;
@@ -191,7 +192,7 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
     displayConfig.height = ANativeWindow_getHeight(nativeWindow);
     displayConfig.dpi.x = dpi;
     displayConfig.dpi.y = dpi;
-    displayConfig.vsyncPeriod = 16666667; // 60Hz
+    displayConfig.vsyncPeriod = 10E8 / refresh;
 
     bool needRefresh = false;
     auto display = mDisplays.find(displayId);
