@@ -4,6 +4,8 @@
 #include <mutex>
 #include <thread>
 
+#include <android/choreographer.h>
+#include <android/looper.h>
 #include <gui/Surface.h>
 #include <ui/Fence.h>
 #include <ui/GraphicBuffer.h>
@@ -33,27 +35,22 @@ typedef std::function<void(int64_t)> vsync_callback_t;
 
 class VsyncThread {
 public:
-    static int64_t now();
-    static bool sleepUntil(int64_t t);
-
-    void start(int64_t first, int64_t period);
+    void start();
     void stop();
     void setCallback(const vsync_callback_t &callback);
-    void enableCallback(bool enable);
+    void scheduleNextFrameCallback();
+    void onVsync(int64_t frameTimeNanos);
 
 private:
     void vsyncLoop();
-    bool waitUntilNextVsync();
 
     std::thread mThread;
-    int64_t mNextVsync{0};
-    int64_t mPeriod{0};
 
     std::mutex mMutex;
-    std::condition_variable mCondition;
+    ALooper *mLooper;
     bool mStarted{false};
     vsync_callback_t mCallback;
-    bool mCallbackEnabled{false};
+    AChoreographer *mChoreographer;
 };
 
 struct ComposerDisplay {
