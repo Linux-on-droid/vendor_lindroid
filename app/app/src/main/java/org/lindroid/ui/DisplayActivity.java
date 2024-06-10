@@ -8,6 +8,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Display;
 import android.view.InputDevice;
 import android.os.Bundle;
@@ -34,6 +36,8 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     private IPerspective mPerspective;
     private int mPreviousWidth = 0;
     private int mPreviousHeight = 0;
+    private static Handler mHandler;
+    private Runnable mSurfaceRunnable;
 
 
     @Override
@@ -51,6 +55,8 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         mDisplayID = displayID;
         mContainerName = containerName;
 
+        if (mHandler == null)
+            mHandler = new Handler(Looper.getMainLooper());
         SurfaceView sv = findViewById(R.id.surfaceView);
         SurfaceHolder sh = sv.getHolder();
         sv.setOnTouchListener(this);
@@ -240,6 +246,16 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
 
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
+        mHandler.removeCallbacksAndMessages(null);
+
+        mSurfaceRunnable = () -> {
+            applySurfaceChanges(holder, format, w, h);
+        };
+
+        mHandler.postDelayed(mSurfaceRunnable, 200);
+    }
+
+    private void applySurfaceChanges(@NonNull SurfaceHolder holder, int format, int w, int h) {
         Surface surface = holder.getSurface();
         if (surface != null) {
             nativeSurfaceChanged(mDisplayID, surface, getResources().getConfiguration().densityDpi);
