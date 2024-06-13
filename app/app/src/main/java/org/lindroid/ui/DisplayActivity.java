@@ -1,7 +1,6 @@
 package org.lindroid.ui;
 
 import static org.lindroid.ui.Constants.PERSPECTIVE_SERVICE_NAME;
-import static org.lindroid.ui.KeyCodeConverter.convertKeyCode;
 import static org.lindroid.ui.NativeLib.*;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -221,13 +220,13 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        nativeKeyEvent(mDisplayID, convertKeyCode(keyCode), true);
+        nativeKeyEvent(mDisplayID, event.getScanCode(), true);
         return super.onKeyDown(keyCode, event);
     }
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        nativeKeyEvent(mDisplayID, convertKeyCode(keyCode), false);
+        nativeKeyEvent(mDisplayID, event.getScanCode(), false);
         return super.onKeyUp(keyCode, event);
     }
 
