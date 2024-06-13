@@ -3,7 +3,7 @@ aidl_interface {
     system_ext_specific: true,
     srcs: [ "vendor/lindroid/composer/*.aidl" ],
     imports: [
-        "android.hardware.graphics.common-V3",
+        "android.hardware.graphics.common-V5",
     ],
 
     unstable: true,
