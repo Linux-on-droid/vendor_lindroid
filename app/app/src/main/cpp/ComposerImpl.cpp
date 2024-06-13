@@ -84,11 +84,7 @@ ndk::ScopedAStatus ComposerImpl::setVsyncEnabled(int64_t in_displayId, int32_t i
     ALOGI("%s: Display: %" PRId64 " enabled: %d", __FUNCTION__, in_displayId, in_enabled);
     auto display = mDisplays.find(in_displayId);
     if (display != mDisplays.end()) {
-        if (in_enabled) {
-            display->second->mVsyncThread.start();
-        } else {
-            display->second->mVsyncThread.stop();
-        }
+        display->second->mVsyncThread.enableCallback(in_enabled == 1);
     }
     return ndk::ScopedAStatus::ok();
 }
@@ -217,6 +213,7 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
                 return;
             mCallbacks->onVsyncReceived(mSequenceId, displayId, timestamp);
         });
+        targetDisplay->mVsyncThread.start(0, displayConfig.vsyncPeriod);
         mDisplays[displayId] = targetDisplay;
     }
 
@@ -252,10 +249,34 @@ void ComposerImpl::onDisplayDestroyed(int64_t displayId) {
     mDisplays.erase(displayId);
 }
 
-void VsyncThread::start() {
-    if (mStarted)
-        return;
+int64_t VsyncThread::now() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
 
+    return int64_t(ts.tv_sec) * 1'000'000'000 + ts.tv_nsec;
+}
+
+bool VsyncThread::sleepUntil(int64_t t) {
+    struct timespec ts;
+    ts.tv_sec = t / 1'000'000'000;
+    ts.tv_nsec = t % 1'000'000'000;
+
+    while (true) {
+        int error = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, nullptr);
+        if (error) {
+            if (error == EINTR) {
+                continue;
+            }
+            return false;
+        } else {
+            return true;
+        }
+    }
+}
+
+void VsyncThread::start(int64_t firstVsync, int64_t period) {
+    mNextVsync = firstVsync;
+    mPeriod = period;
     mStarted = true;
     mThread = std::thread(&VsyncThread::vsyncLoop, this);
 }
@@ -263,11 +284,9 @@ void VsyncThread::start() {
 void VsyncThread::stop() {
     {
         std::lock_guard<std::mutex> lock(mMutex);
-        if (!mStarted)
-            return;
-
         mStarted = false;
     }
+    mCondition.notify_all();
     mThread.join();
 }
 
@@ -276,51 +295,52 @@ void VsyncThread::setCallback(const vsync_callback_t &callback) {
     mCallback = callback;
 }
 
-void VsyncThread::onVsync(int64_t frameTimeNanos) {
-    std::lock_guard<std::mutex> lock(mMutex);
-    ALOGV("VsyncThread(%" PRId64 ")", frameTimeNanos);
-    if (mCallback) {
-        mCallback(frameTimeNanos);
+void VsyncThread::enableCallback(bool enable) {
+    if (mCallbackEnabled == enable)
+        return;
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        mCallbackEnabled = enable;
     }
-    if (mStarted) {
-        scheduleNextFrameCallback();
-    }
-}
-
-void VsyncThread::scheduleNextFrameCallback() {
-    AChoreographer_postFrameCallback64(mChoreographer, [](int64_t frameTimeNanos, void *data) {
-        reinterpret_cast<VsyncThread *>(data)->onVsync(frameTimeNanos);
-    }, this);
+    mCondition.notify_all();
 }
 
 void VsyncThread::vsyncLoop() {
     prctl(PR_SET_NAME, "VsyncThread", 0, 0, 0);
 
-    int outFd, outEvents;
-    void *outData;
-    std::lock_guard<std::mutex> lock(mMutex);
-    mLooper = ALooper_prepare(0);
-    if (!mLooper) {
-        ALOGE("ALooper_prepare failed");
+    std::unique_lock<std::mutex> lock(mMutex);
+    if (!mStarted) {
         return;
     }
 
-    mChoreographer = AChoreographer_getInstance();
-    if (!mChoreographer) {
-        ALOGE("AChoreographer_getInstance failed");
-        return;
-    }
+    while (true) {
+        if (!mCallbackEnabled) {
+            mCondition.wait(lock, [this] { return mCallbackEnabled || !mStarted; });
+            if (!mStarted) {
+                break;
+            }
+        }
 
-    if (mStarted)
-        scheduleNextFrameCallback();
+        lock.unlock();
 
-    while (mStarted) {
-        // mutex should be unlocked before sleeping on pollAll
-        mMutex.unlock();
-        ALooper_pollAll(-1, &outFd, &outEvents, &outData);
-        mMutex.lock();
+        // adjust mNextVsync if necessary
+        int64_t t = now();
+        if (mNextVsync < t) {
+            int64_t n = (t - mNextVsync + mPeriod - 1) / mPeriod;
+            mNextVsync += mPeriod * n;
+        }
+        bool fire = sleepUntil(mNextVsync);
+
+        lock.lock();
+
+        if (fire) {
+            ALOGV("VsyncThread(%" PRId64 ")", mNextVsync);
+            if (mCallback) {
+                mCallback(mNextVsync);
+            }
+            mNextVsync += mPeriod;
+        }
     }
-    ALOGI("Terminating Vsync Looper thread");
 }
 
 } // namespace composer
