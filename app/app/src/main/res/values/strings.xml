@@ -8,6 +8,10 @@
     <string name="not_running_message">Lindroid container currently isn\'t running, do you want to start it?.</string>
     <string name="stop_title">Stop Linux subsystem</string>
     <string name="stop_message">Do you want to stop the Linux subsystem?</string>
+    <string name="creating_container_title">Creating container...</string>
+    <string name="creating_container_message">Please be patient</string>
+    <string name="no_container_title">No container found</string>
+    <string name="no_container_message">Do you want to create one?</string>
 
 
 </resources>

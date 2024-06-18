@@ -5,10 +5,12 @@ import static org.lindroid.ui.NativeLib.*;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.os.ParcelFileDescriptor;
 import android.view.Display;
 import android.view.InputDevice;
 import android.os.Bundle;
@@ -17,6 +19,7 @@ import android.util.Log;
 import android.os.IBinder;
 import android.os.ServiceManager;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.PointerIcon;
 import android.view.Surface;
@@ -25,6 +28,11 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.widget.TextView;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.List;
 
 import vendor.lindroid.perspective.IPerspective;
 
@@ -84,28 +92,73 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
             mPerspective = IPerspective.Stub.asInterface(binder);
         }
 
-        // Check if container is running
+        List<String> containers;
         try {
-            if(!mPerspective.isRunning(mContainerName)) {
-                new MaterialAlertDialogBuilder(this)
-                        .setTitle(R.string.not_running_title)
-                        .setMessage(R.string.not_running_message)
-                        .setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                            try {
-                                mPerspective.start(mContainerName);
-                            } catch (RemoteException e) {
-                                Log.e(TAG, "RemoteException in start", e);
-                            }
-                        })
-                        .setNegativeButton(android.R.string.cancel, (dialog, which) -> {
-                            dialog.dismiss();
-                            finish();
-                        })
-                        .setIcon(R.drawable.ic_help)
-                        .show();
-            }
+            containers = mPerspective.listContainers();
         } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException in isRunning", e);
+            Log.e(TAG, "RemoteException in listContainers", e);
+            return;
+        }
+        if (containers.isEmpty()) {
+            Log.d(TAG, "Found no containers");
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.no_container_title)
+                    .setMessage(R.string.no_container_message)
+                    .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                        View v = LayoutInflater.from(this).inflate(R.layout.progressdialog, null);
+                        ((TextView) v.findViewById(R.id.prog_message)).setText(R.string.creating_container_message);
+                        AlertDialog inner = new MaterialAlertDialogBuilder(this)
+                                .setCancelable(false)
+                                .setTitle(R.string.creating_container_title)
+                                .setView(v)
+                                .show();
+                        new Thread(() -> {
+                            try {
+                                mPerspective.addContainer(mContainerName,
+                                        ParcelFileDescriptor.open(
+                                                new File(getFilesDir(), "rootfs.tar.gz"),
+                                                ParcelFileDescriptor.MODE_READ_ONLY));
+                                mPerspective.start(mContainerName);
+                            } catch (RemoteException | FileNotFoundException e) {
+                                Log.e(TAG, "Exception in add", e);
+                            }
+                            new Handler(Looper.getMainLooper()).post(inner::dismiss);
+                        }).start();
+                    })
+                    .setNegativeButton(android.R.string.cancel, (dialog, which) -> {
+                        dialog.dismiss();
+                        finish();
+                    })
+                    .setIcon(R.drawable.ic_help)
+                    .show();
+        } else {
+            for (String name : containers) {
+                Log.d(TAG, "Found container " + name);
+            }
+
+            // Check if container is running
+            try {
+                if(!mPerspective.isRunning(mContainerName)) {
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle(R.string.not_running_title)
+                            .setMessage(R.string.not_running_message)
+                            .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                                try {
+                                    mPerspective.start(mContainerName);
+                                } catch (RemoteException e) {
+                                    Log.e(TAG, "RemoteException in start", e);
+                                }
+                            })
+                            .setNegativeButton(android.R.string.cancel, (dialog, which) -> {
+                                dialog.dismiss();
+                                finish();
+                            })
+                            .setIcon(R.drawable.ic_help)
+                            .show();
+                }
+            } catch (RemoteException e) {
+                Log.e(TAG, "RemoteException in isRunning", e);
+            }
         }
     }
 

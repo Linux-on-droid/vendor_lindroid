@@ -1,6 +1,7 @@
 /*
  * Copyright 2015-2016 Preetam J. D'Souza
  * Copyright 2016 The Maru OS Project
+ * Copyright 2024 Lindroid
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,5 +25,7 @@ interface IPerspective {
     boolean start(String id);
     boolean stop(String id);
     boolean isRunning(String id);
-
+    List<String> listContainers();
+    boolean addContainer(String id, in ParcelFileDescriptor tarball);
+    boolean deleteContainer(String id);
 }

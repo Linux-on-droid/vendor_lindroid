@@ -31,6 +31,9 @@ public:
     virtual ndk::ScopedAStatus start(const std::string &id, bool *_aidl_return);
     virtual ndk::ScopedAStatus stop(const std::string &id, bool *_aidl_return);
     virtual ndk::ScopedAStatus isRunning(const std::string &id, bool *_aidl_return);
+    virtual ndk::ScopedAStatus listContainers(std::vector<std::string> *_aidl_return);
+    virtual ndk::ScopedAStatus addContainer(const std::string &id, const ndk::ScopedFileDescriptor& fd, bool *_aidl_return);
+    virtual ndk::ScopedAStatus deleteContainer(const std::string &id, bool *_aidl_return);
 
     // ------------------------------------------------------------------------
 };
