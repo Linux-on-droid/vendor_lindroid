@@ -16,3 +16,4 @@ on post-fs-data
     mkdir /data/lindroid/lxc/run 0770 system system
     mkdir /data/lindroid/lxc/rootfs 0770 system system
     mkdir /data/lindroid/lxc/rootfs_ro 0770 system system
+    mkdir /data/lindroid/lxc/container 0770 system system
