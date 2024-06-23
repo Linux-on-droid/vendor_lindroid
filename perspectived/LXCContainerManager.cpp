@@ -1,5 +1,6 @@
 /*
  * Copyright 2017 The Maru OS Project
+ * Copyright 2024 Lindroid
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,58 +127,36 @@ static bool containerAdd(const char* id, int tarball) {
         ALOGE("invalid id");
         return false;
     }
-    std::string dir = "/data/lindroid/lxc/container/" + std::string(id);
-    if (mkdir(dir.c_str(), 077)) {
-        ALOGE("mkdir %s failed", dir.c_str());
+    struct lxc_container *c = lxc_container_new(id, lxc_get_global_config_item("lxc.lxcpath"));
+    if (!c) {
+        ALOGE("failed to create container, lxc said new failed");
         return false;
     }
-    std::string cfg = dir + "/config";
-    /*dir = dir + "/rootfs";
-    if (mkdir(dir.c_str(), 077)) {
-        ALOGE("mkdir %s failed", dir.c_str());
-        return false;
-    }enable this when rootfs pack fixed*/
-    std::string cmd = "sed \"s/REPLACEME/" + std::string(id) + "\"/g /system/lindroid/lxc/container/default/config > " + cfg;
-    system(cmd.c_str());
-    pid_t pid = fork();
-    if (pid == -1) {
-        ALOGE("failed to fork()");
-        return false;
-    } else if (pid > 0) {
-        int status;
-        waitpid(pid, &status, 0);
-        if (status) {
-            ALOGE("failed to create container, tar returned %d", status);
-            return false;
-        }
-        ALOGI("while creating container, done with extract!");
-        // TODO this should probably use lxc templates
-        //struct lxc_container *c = lxc_container_new(id, cfg.c_str());
-        struct lxc_container *c = initContainer(id);
-        if (!c) {
-            ALOGE("failed to create container, lxc said new failed");
-            return false;
-        }
-        /*if (!c->create(c, NULL, NULL, NULL, 0, NULL)) {
-            ALOGE("failed to create container, lxc said create failed");
-            lxc_container_put(c);
-            return false;
-        }*/
-        // we did it!
+    if (c->is_running(c)) {
+        ALOGE("failed to create container, can't create running container");
         lxc_container_put(c);
-        return true;
-    } else {
-        dup2(tarball, STDIN_FILENO);
-        close(tarball);
-        ALOGI("while creating container, going to extract");
-        char binTar[] = { "/system/bin/tar" };
-        char x[] = { "x" };
-        char dashC[] = { "-C" };
-        char* dirCstr = strdup(dir.c_str());
-        char* args[] = { binTar, x, dashC, dirCstr, NULL };
-        execv(binTar, args);
-        exit(1);
+        return false;
     }
+    if (c->is_defined(c)) {
+        ALOGE("failed to create container, can't create defined container");
+        lxc_container_put(c);
+        return false;
+    }
+    c->load_config(c, lxc_get_global_config_item("lxc.default_config"));
+    int fd = dup(tarball); // avoid binder closing fd on us
+    char fdBuf[13] = { '\0' };
+    snprintf(fdBuf, sizeof(fdBuf), "/dev/fd/%d", fd);
+    ALOGI("going to extract from %s", fdBuf);
+    char f[] = { "-f" };
+    char* args[] = { f, fdBuf, NULL };
+    bool ret = true;
+    if (!c->create(c, "lindroid", NULL, NULL, 0, args)) {
+        ALOGE("failed to create container, lxc said create failed (check stdout/stderr for more info)");
+        ret = false;
+    }
+    close(fd);
+    lxc_container_put(c);
+    return ret;
 }
 
 static bool containerDelete(const char* id) {

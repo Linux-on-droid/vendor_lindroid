@@ -24,20 +24,22 @@ PRODUCT_PACKAGES += \
     lxc_unshare
 
 # Hacked libc for lxc container
-PRODUCT_COPY_FILES += $(LOCAL_PATH)/prebuilt/libc.so:$(TARGET_COPY_OUT_SYSTEM)/lindroid/libc.so \
+PRODUCT_COPY_FILES += $(LOCAL_PATH)/prebuilt/libc.so:$(TARGET_COPY_OUT_SYSTEM_EXT)/usr/share/lindroid/libc.so
 
 # Misc lindroid stuff
 PRODUCT_PACKAGES += \
     libhwc2_compat_layer \
     libui_compat_layer \
     LindroidUI \
-    perspectived
+    perspectived \
+    init.lindroid.rc \
+    lxc-lindroid
 
 # IDC to ignore lindroid inputs on android side
 PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/configs/idc/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000a.idc \
-    $(LOCAL_PATH)/configs/idc/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000b.idc \
-    $(LOCAL_PATH)/configs/idc/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000c.idc
+    $(LOCAL_PATH)/configs/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000a.idc \
+    $(LOCAL_PATH)/configs/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000b.idc \
+    $(LOCAL_PATH)/configs/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000c.idc
 
-# LXC configs and default container
-$(call inherit-product, $(LOCAL_PATH)/lxc/lxc.mk)
+# Default LXC config
+PRODUCT_COPY_FILES += $(LOCAL_PATH)/lxc/default.conf:$(TARGET_COPY_OUT_SYSTEM_EXT)/usr/share/lindroid/lxc/default.conf

@@ -1,0 +1,15 @@
+prebuilt_etc {
+    name: "init.lindroid.rc",
+    src: "init.lindroid.rc",
+    filename_from_src: true,
+    sub_dir: "init",
+    system_ext_specific: true,
+}
+
+prebuilt_usr_share {
+    name: "lxc-lindroid",
+    src: "template.sh",
+    filename: "lxc-lindroid",
+    sub_dir: "lindroid/lxc/templates",
+    system_ext_specific: true,
+}
