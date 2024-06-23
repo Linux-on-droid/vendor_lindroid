@@ -33,13 +33,11 @@ PRODUCT_PACKAGES += \
     LindroidUI \
     perspectived \
     init.lindroid.rc \
-    lxc-lindroid
+    lxc-lindroid \
+    lindroid-default.conf
 
 # IDC to ignore lindroid inputs on android side
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000a.idc \
     $(LOCAL_PATH)/configs/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000b.idc \
     $(LOCAL_PATH)/configs/disabled.idc:$(TARGET_COPY_OUT_SYSTEM)/usr/idc/Vendor_000a_Product_000c.idc
-
-# Default LXC config
-PRODUCT_COPY_FILES += $(LOCAL_PATH)/lxc/default.conf:$(TARGET_COPY_OUT_SYSTEM_EXT)/usr/share/lindroid/lxc/default.conf

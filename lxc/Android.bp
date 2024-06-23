@@ -13,3 +13,11 @@ prebuilt_usr_share {
     sub_dir: "lindroid/lxc/templates",
     system_ext_specific: true,
 }
+
+prebuilt_usr_share {
+    name: "lindroid-default.conf",
+    src: "default.conf",
+    filename_from_src: true,
+    sub_dir: "lindroid/lxc",
+    system_ext_specific: true,
+}
