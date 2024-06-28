@@ -327,8 +327,7 @@ unpack_rootfs() {
     echo "Excludes: ${EXCLUDES}"
   fi
 
-  #TODO remove /.. from the end when rootfs packing is fixed
-  tar ${EXCLUDES} --numeric-owner --selinux -xpf "${LXC_FSTREE}" -C "${LXC_ROOTFS}/.."
+  tar ${EXCLUDES} --numeric-owner --selinux -xpf "${LXC_FSTREE}" -C "${LXC_ROOTFS}"
 
   prepare_rootfs
 }
