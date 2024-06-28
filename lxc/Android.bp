@@ -6,11 +6,11 @@ prebuilt_etc {
     system_ext_specific: true,
 }
 
-prebuilt_usr_share {
+sh_binary {
     name: "lxc-lindroid",
     src: "template.sh",
     filename: "lxc-lindroid",
-    sub_dir: "lindroid/lxc/templates",
+    sub_dir: "lindroid-lxc-templates",
     system_ext_specific: true,
 }
 
