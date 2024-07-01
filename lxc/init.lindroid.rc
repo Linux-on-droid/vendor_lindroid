@@ -5,8 +5,6 @@ on init
     mount cgroup none /sys/fs/cgroup/freezer freezer
     mkdir /sys/fs/cgroup/systemd 0750 root system
     mount cgroup none /sys/fs/cgroup/systemd none,name=systemd
-    chmod 0660 /dev/uinput
-    chown root system /dev/uinput
 
 on post-fs-data
     mkdir /data/lindroid 0770 system system

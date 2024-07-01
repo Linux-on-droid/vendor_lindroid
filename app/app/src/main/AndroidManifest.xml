@@ -4,6 +4,9 @@
     package="org.lindroid.ui"
     android:sharedUserId="android.uid.system">
 
+    <uses-permission android:name="android.permission.VIRTUAL_INPUT_DEVICE"
+        tools:ignore="ProtectedPermissions" />
+
     <application
         android:name=".MainApplication"
         android:icon="@mipmap/ic_launcher"
