@@ -1,4 +1,4 @@
-#!/system_ext/bin/bash
+#!/system/bin/sh
 #
 # SPDX-License-Identifier: LGPL-2.1+
 #
