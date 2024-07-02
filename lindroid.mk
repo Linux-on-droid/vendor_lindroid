@@ -24,7 +24,11 @@ PRODUCT_PACKAGES += \
     lxc_unshare
 
 # Hacked libc for lxc container
-PRODUCT_COPY_FILES += $(LOCAL_PATH)/prebuilt/libc.so:$(TARGET_COPY_OUT_SYSTEM_EXT)/usr/share/lindroid/libc.so
+ifneq ($(filter %x86 %x86_64,$(TARGET_PRODUCT)),)
+PRODUCT_COPY_FILES += $(LOCAL_PATH)/prebuilt/x86_64/libc.so:$(TARGET_COPY_OUT_SYSTEM_EXT)/usr/share/lindroid/libc.so
+else
+PRODUCT_COPY_FILES += $(LOCAL_PATH)/prebuilt/arm64/libc.so:$(TARGET_COPY_OUT_SYSTEM_EXT)/usr/share/lindroid/libc.so
+endif
 
 # Misc lindroid stuff
 PRODUCT_PACKAGES += \
