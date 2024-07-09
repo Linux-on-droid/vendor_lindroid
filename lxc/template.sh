@@ -432,6 +432,9 @@ lxc.mount.entry = /dev/binderfs dev/binderfs bind bind,create=dir,optional 0 0
 # Hack, bind mount patched libc inside container to avoid errors
 lxc.mount.entry = /system_ext/usr/share/lindroid/libc.so apex/com.android.runtime/lib64/bionic/libc.so none bind,optional,ro,create=file
 
+# Sockets dir
+lxc.mount.entry = /data/lindroid/mnt lindroid bind bind,create=dir,optional 0 0
+
 # GPU devices
 lxc.mount.entry = /dev/kgsl-3d0 dev/kgsl-3d0 none bind,optional,create=file
 lxc.mount.entry = /dev/mali0 dev/mali0 none bind,optional,create=file

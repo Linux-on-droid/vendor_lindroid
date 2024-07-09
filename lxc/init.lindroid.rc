@@ -8,6 +8,7 @@ on init
 
 on post-fs-data
     mkdir /data/lindroid 0770 system system
+    mkdir /data/lindroid/mnt 0770 system system
     mkdir /data/lindroid/lxc 0770 system system
     mkdir /data/lindroid/lxc/log 0770 system system
     mkdir /data/lindroid/lxc/run 0770 system system
