@@ -12,6 +12,7 @@
 #define DEVICE_KEYBOARD 0
 #define DEVICE_TOUCH 1
 #define DEVICE_TABLET 2
+#define DEVICE_TOUCH_STYLUS 3
 
 using android::Mutex;
 using android::RefBase;
@@ -27,6 +28,7 @@ struct UInputDevice {
     int32_t mHeight;
     int32_t mFDKeyboard = -1;
     int32_t mFDTouch = -1;
+    int32_t mFDTouchStylus = -1;
     int32_t mFDTablet = -1;
 };
 
@@ -37,6 +39,9 @@ public:
 
     virtual void keyEvent(int64_t displayId, uint32_t keyCode, bool isDown);
     virtual void touchEvent(int64_t displayId, int64_t pointerId, int32_t action, int32_t pressure, int32_t x, int32_t y);
+    virtual void touchStylusButtonEvent(int64_t displayId, uint32_t button, bool isDown);
+    virtual void touchStylusHoverEvent(int64_t displayId, int32_t action, int32_t x, int32_t y, int32_t distance, int32_t tilt_x, int32_t tilt_y);
+    virtual void touchStylusEvent(int64_t displayId, int32_t action, int32_t pressure, int32_t x, int32_t y, int32_t tilt_x, int32_t tilt_y);
     virtual void pointerMotionEvent(int64_t displayId, int32_t x, int32_t y);
     virtual void pointerButtonEvent(int64_t displayId, uint32_t button, int32_t x, int32_t y, bool isDown);
     virtual void pointerScrollEvent(int64_t displayId, uint32_t value, bool isVertical);
