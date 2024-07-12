@@ -18,6 +18,9 @@ public class NativeLib {
     public static native void nativeStopInputDevice(long displayId);
     public static native void nativeKeyEvent(long displayId, int keyCode, boolean isDown);
     public static native void nativeTouchEvent(long displayId, int pointerId, int action, int pressure, int x, int y);
+    public static native void nativeTouchStylusButtonEvent(long displayId, int button, boolean isDown);
+    public static native void nativeTouchStylusHoverEvent(long displayId, int action, int x, int y, int distance, int tilt_x, int tilt_y);
+    public static native void nativeTouchStylusEvent(long displayId, int action, int pressure, int x, int y, int tilt_x, int tilt_y);
     public static native void nativePointerMotionEvent(long displayId, int x, int y);
     public static native void nativePointerButtonEvent(long displayId, int button, int x, int y, boolean isDown);
     public static native void nativePointerScrollEvent(long displayId, int value, boolean isVertical);

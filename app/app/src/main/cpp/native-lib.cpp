@@ -202,6 +202,45 @@ Java_org_lindroid_ui_NativeLib_nativeTouchEvent(
 }
 
 extern "C" void
+Java_org_lindroid_ui_NativeLib_nativeTouchStylusButtonEvent(
+    JNIEnv *env, jobject /* this */,
+    jlong displayId, jint button, jboolean isDown) {
+
+    if (inputDevice == nullptr) {
+        ALOGE("InputDevice is not initialized!");
+        return;
+    }
+
+    inputDevice->touchStylusButtonEvent(displayId, button, isDown);
+}
+
+extern "C" void
+Java_org_lindroid_ui_NativeLib_nativeTouchStylusHoverEvent(
+    JNIEnv *env, jobject /* this */,
+    jlong displayId, jint action, jint x, jint y, jint distance, jint tilt_x, jint tilt_y) {
+
+    if (inputDevice == nullptr) {
+        ALOGE("InputDevice is not initialized!");
+        return;
+    }
+
+    inputDevice->touchStylusHoverEvent(displayId, action, x, y, distance, tilt_x, tilt_y);
+}
+
+extern "C" void
+Java_org_lindroid_ui_NativeLib_nativeTouchStylusEvent(
+    JNIEnv *env, jobject /* this */,
+    jlong displayId, jint action, jint pressure, jint x, jint y, jint tilt_x, jint tilt_y) {
+
+    if (inputDevice == nullptr) {
+        ALOGE("InputDevice is not initialized!");
+        return;
+    }
+
+    inputDevice->touchStylusEvent(displayId, action, pressure, x, y, tilt_x, tilt_y);
+}
+
+extern "C" void
 Java_org_lindroid_ui_NativeLib_nativePointerMotionEvent(
     JNIEnv *env, jobject /* this */,
     jlong displayId, jint x, jint y) {

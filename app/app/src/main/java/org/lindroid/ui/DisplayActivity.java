@@ -245,7 +245,19 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     public boolean onHover(View view, MotionEvent motionEvent) {
         int x = (int) motionEvent.getX(0);
         int y = (int) motionEvent.getY(0);
-        nativePointerMotionEvent(mDisplayID, x, y);
+        if (motionEvent.getToolType(0)  == MotionEvent.TOOL_TYPE_STYLUS) {
+            int distance = (int) motionEvent.getAxisValue(MotionEvent.AXIS_DISTANCE);
+            float tilt = motionEvent.getAxisValue(MotionEvent.AXIS_TILT);
+            float orientation = motionEvent.getAxisValue(MotionEvent.AXIS_ORIENTATION);
+
+
+            int tiltX = (int) (tilt * Math.cos(orientation));
+            int tiltY = (int) (tilt * Math.sin(orientation));
+            int action = motionEvent.getActionMasked();
+            nativeTouchStylusHoverEvent(mDisplayID, action, x, y, distance, tiltX, tiltY);
+        } else {
+            nativePointerMotionEvent(mDisplayID, x, y);
+        }
         return true;
     }
 
@@ -256,6 +268,20 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
             return onHover(view, motionEvent);
         }
 
+        if (motionEvent.getToolType(0)  == MotionEvent.TOOL_TYPE_STYLUS) {
+            int x = (int) motionEvent.getX(0);
+            int y = (int) motionEvent.getY(0);
+            int pressure = (int) (motionEvent.getPressure(0) * 4096);
+            float tilt = motionEvent.getAxisValue(MotionEvent.AXIS_TILT); // Tilt angle in radians
+            float orientation = motionEvent.getAxisValue(MotionEvent.AXIS_ORIENTATION); // Orientation angle in radians
+
+            // Calculate tilt_x and tilt_y using the tilt and orientation values
+            int tiltX = (int) (tilt * Math.cos(orientation) * 90);
+            int tiltY = (int) (tilt * Math.sin(orientation) * 90);
+            int action = motionEvent.getActionMasked();
+            nativeTouchStylusEvent(mDisplayID, action, pressure, x, y, tiltX, tiltY);
+            return true;
+        }
         int pointerCount = motionEvent.getPointerCount();
         for (int i = 0; i < pointerCount; i++) {
             int pointerId = motionEvent.getPointerId(i);
