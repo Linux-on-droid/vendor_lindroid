@@ -1,0 +1,3 @@
+/system_ext/bin/perspectived           u:object_r:perspectived_exec:s0
+/data/lindroid(/.*)?                   u:object_r:lindroid_file:s0
+

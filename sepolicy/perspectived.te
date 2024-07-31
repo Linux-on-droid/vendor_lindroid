@@ -1,0 +1,30 @@
+# perspectived
+type perspectived, domain;
+typeattribute perspectived coredomain;
+type perspectived_exec, exec_type, file_type, system_file_type;
+
+permissive perspectived;
+
+init_daemon_domain(perspectived)
+
+allow system_app perspectived:binder call;
+
+allow perspectived servicemanager:binder { call transfer };
+
+allow perspectived self:netlink_kobject_uevent_socket { create setopt bind read };
+allow perspectived self:capability net_admin;
+
+allow perspectived init:file r_file_perms;
+allow perspectived init:dir w_dir_perms;
+
+allow perspectived shell_exec:file rx_file_perms;
+
+allow perspectived cache_file:file create_file_perms;
+allow perspectived cache_file:dir create_dir_perms;
+
+allow perspectived tmpfs:file create_file_perms;
+allow perspectived tmpfs:dir create_dir_perms;
+
+allow perspectived lindroid_file:dir rw_dir_perms;
+allow perspectived lindroid_file:file create_file_perms;
+allow perspectived lindroid_file:lnk_file r_file_perms;

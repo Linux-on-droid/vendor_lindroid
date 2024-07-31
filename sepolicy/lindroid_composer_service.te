@@ -1,0 +1,1 @@
+allow system_app lindroid_composer_service:service_manager add;

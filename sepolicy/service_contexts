@@ -1,0 +1,2 @@
+perspective                 u:object_r:perspectived_service:s0
+vendor.lindroid.composer    u:object_r:lindroid_composer_service:s0
