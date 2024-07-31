@@ -1,0 +1,72 @@
+# perspectived
+type perspectived, domain;
+typeattribute perspectived coredomain;
+type perspectived_exec, exec_type, file_type, system_file_type;
+
+init_daemon_domain(perspectived)
+
+permissive perspectived;
+
+allow perspectived perspectived_service:service_manager add;
+
+allow system_app perspectived:binder call;
+
+allow perspectived servicemanager:binder { call transfer };
+
+allow perspectived self:netlink_kobject_uevent_socket { create setopt bind read };
+allow perspectived self:capability { net_admin chown fsetid fowner sys_admin sys_resource kill };
+
+allow perspectived init:file r_file_perms;
+allow perspectived init:dir w_dir_perms;
+
+allow perspectived shell_exec:file rx_file_perms;
+
+allow perspectived cache_file:file create_file_perms;
+allow perspectived cache_file:dir create_dir_perms;
+
+allow perspectived tmpfs:file create_file_perms;
+allow perspectived tmpfs:dir create_dir_perms;
+allow perspectived tmpfs:lnk_file { read create setattr rename };
+
+allow perspectived lindroid_file:dir { rw_dir_perms create setattr };
+allow perspectived lindroid_file:file create_file_perms;
+allow perspectived lindroid_file:lnk_file { create setattr r_file_perms};
+
+allow perspectived system_app:fd use;
+allow perspectived system_app_data_file:file read;
+
+allow perspectived rootfs:dir mounton;
+allow perspectived system_file:file execute_no_trans;
+
+
+allow perspectived input_device:dir { getattr write add_name create };
+allow perspectived input_device:lnk_file create;
+
+allow perspectived gpu_device:chr_file { getattr write };
+
+#allow perspectived vendor_sysfs_usb_controller:dir search;
+allow perspectived sysfs_loop:dir { read open };
+
+allow perspectived property_socket:sock_file write;
+#allow perspectived init:unix_stream_socket connectto;
+#allow perspectived proc:filesystem remount;
+#allow perspectived fusectlfs:filesystem remount;
+#allow perspectived labeledfs:filesystem unmount;
+allow perspectived devpts:chr_file { read lock };
+#allow perspectived netlink_kobject_uevent_socket { getopt getattr write };
+allow perspectived vendor_sysfs_battery_supply:dir search;
+#allow perspectived sysfs:file { read open getattr };
+allow perspectived sysfs:dir search;
+allow perspectived su:file { read open getattr ioctl };
+allow perspectived su:dir search;
+#allow perspectived lindroid_file:file { execmem execmod };
+allow perspectived vendor_sysfs_graphics:dir search;
+allow perspectived lindroid_file:file link;
+allow perspectived cgroup:dir { read rmdir };
+allow perspectived cgroup_v2:file { read getattr };
+allow perspectived cgroup_v2:dir create;
+allow perspectived tmpfs:sock_file write;
+
+#allow perspectived systemd_udevd:netlink_kobject_uevent_socket { getopt getattr };
+
+allow perspectived unlabeled:file getattr;

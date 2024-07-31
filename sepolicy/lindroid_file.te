@@ -1,0 +1,7 @@
+type lindroid_file, file_type, data_file_type, core_data_file_type;
+
+# Allow system_app to remove and add the audio_socket file
+allow system_app lindroid_file:dir { remove_name add_name };
+
+# Allow system_app to unlink the audio_socket
+allow system_app lindroid_file:sock_file unlink;
