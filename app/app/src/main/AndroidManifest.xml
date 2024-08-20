@@ -14,19 +14,25 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Lindroid"
         android:persistent="true">
+
+        <!-- Launcher Activity -->
         <activity
-            android:name=".PrimaryDisplayActivity"
-            android:exported="true">
+            android:name=".LauncherActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Display Activity -->
         <activity
-            android:name=".SecondaryDisplayActivity"
-            android:launchMode="singleTask"
-            android:taskAffinity="cover.container"/>
+            android:name=".DisplayActivity"
+            android:taskAffinity="cover.container" >
+            <!-- This activity does not need to be directly launched -->
+        </activity>
+
         <service
             android:name=".HardwareService"
             android:exported="true"/>
@@ -35,5 +41,4 @@
             android:name="android.allow_multiple_resumed_activities"
             android:value="true" />
     </application>
-
 </manifest>

@@ -56,6 +56,11 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
             controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
             controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         }
+        long displayID = getIntent().getLongExtra("displayID", 0);
+        String containerName = getIntent().getStringExtra("containerName");
+        Log.d(TAG, "Starting container: " + containerName + " on disp: " + displayID);
+        start(displayID, containerName);
+
     }
 
     public void start(long displayID, String containerName) {
