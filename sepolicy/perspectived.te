@@ -60,7 +60,7 @@ allow perspectived sysfs:dir search;
 allow perspectived su:file { read open getattr ioctl };
 allow perspectived su:dir search;
 #allow perspectived lindroid_file:file { execmem execmod };
-allow perspectived vendor_sysfs_graphics:dir search;
+#allow perspectived vendor_sysfs_graphics:dir search;
 allow perspectived lindroid_file:file link;
 allow perspectived cgroup:dir { read rmdir };
 allow perspectived cgroup_v2:file { read getattr };
