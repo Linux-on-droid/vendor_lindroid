@@ -54,7 +54,7 @@ allow perspectived property_socket:sock_file write;
 #allow perspectived labeledfs:filesystem unmount;
 allow perspectived devpts:chr_file { read lock };
 #allow perspectived netlink_kobject_uevent_socket { getopt getattr write };
-allow perspectived vendor_sysfs_battery_supply:dir search;
+#allow perspectived vendor_sysfs_battery_supply:dir search;
 #allow perspectived sysfs:file { read open getattr };
 allow perspectived sysfs:dir search;
 allow perspectived su:file { read open getattr ioctl };
