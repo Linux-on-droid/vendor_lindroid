@@ -1,5 +1,8 @@
 package org.lindroid.ui;
 
+import static org.lindroid.ui.NativeLib.nativeDisplayDestroyed;
+import static org.lindroid.ui.NativeLib.nativeStopInputDevice;
+
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -17,8 +20,8 @@ public class HardwareService extends Service {
     private AudioSocketServer audioSocketServer;
     private boolean started = false;
 
-    public static boolean isInstanceCreated() {
-        return instance != null;
+    public static HardwareService getInstance() {
+        return instance;
     }
 
     @Override
@@ -57,7 +60,6 @@ public class HardwareService extends Service {
             }
             instance = this;
             audioSocketServer = new AudioSocketServer();
-            audioSocketServer.startServer();
         }
         startForeground(Constants.NOTIFICATION_ID,
                 new Notification.Builder(this, Constants.NOTIFICATION_CHANNEL_ID)
@@ -77,8 +79,13 @@ public class HardwareService extends Service {
     @Override
     public void onDestroy() {
         handler.removeCallbacksAndMessages(null);
-        if (audioSocketServer != null)
+        if (audioSocketServer != null) {
             audioSocketServer.stopServer();
+            audioSocketServer = null;
+        }
         instance = null;
+        // these don't explode if display 0 doesn't exist
+        nativeDisplayDestroyed(0);
+        nativeStopInputDevice(0);
     }
 }

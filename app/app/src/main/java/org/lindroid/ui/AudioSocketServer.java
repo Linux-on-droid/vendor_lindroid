@@ -37,7 +37,7 @@ public class AudioSocketServer {
     private AudioTrack audioTrack;
     private AudioRecord audioRecord;
 
-    public void startServer() {
+    public AudioSocketServer() {
         executor.execute(() -> {
             try {
                 // Remove existing socket file if it exists

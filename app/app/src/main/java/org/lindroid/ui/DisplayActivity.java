@@ -40,10 +40,10 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         View.OnTouchListener,
         View.OnHoverListener,
         View.OnGenericMotionListener {
-    private static final String TAG = "Lindroid";
+    private static final String TAG = "DisplayActivity";
     private static Handler mHandler; // globally makes sure the calls are ordered
-    private String mContainerName = "default";
-    private long mDisplayID = 0;
+    private String mContainerName;
+    private int mDisplayID = 0;
     private int mPreviousWidth = 0;
     private int mPreviousHeight = 0;
     private Runnable mSurfaceRunnable;
@@ -51,7 +51,12 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     @Override
     @SuppressLint("ClickableViewAccessibility") // use screen reader inside linux
     protected void onCreate(Bundle savedInstanceState) {
+        int displayID = getIntent().getIntExtra("displayID", 0);
+        String containerName = getIntent().getStringExtra("containerName");
         super.onCreate(savedInstanceState);
+        if (HardwareService.getInstance() == null) {
+            startForegroundService(new Intent(this, HardwareService.class));
+        }
         SurfaceView mSurfaceView = new SurfaceView(this);
         setContentView(mSurfaceView);
         final WindowInsetsController controller = getWindow().getInsetsController();
@@ -59,12 +64,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
             controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
             controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         }
-        long displayID = getIntent().getLongExtra("displayID", 0);
-        String containerName = getIntent().getStringExtra("containerName");
-        Log.d(TAG, "Starting container: " + containerName + " on disp: " + displayID);
-        if (!HardwareService.isInstanceCreated()) {
-            startForegroundService(new Intent(this, HardwareService.class));
-        }
+        Log.d(TAG, "Starting container: " + containerName + " on display: " + displayID);
         mDisplayID = displayID;
         mContainerName = containerName;
 
@@ -82,16 +82,19 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
 
     @Override
     public void onBackPressed() {
-        if (ContainerManager.isRunning(mContainerName)) {
+        if (mDisplayID == 0 && mContainerName != null && ContainerManager.isRunning(mContainerName)) {
             new MaterialAlertDialogBuilder(this)
                     .setTitle(R.string.stop_title)
                     .setMessage(R.string.stop_message)
                     .setPositiveButton(R.string.yes, (dialog, which) -> {
+                        HardwareService hs = HardwareService.getInstance();
+                        if (hs != null) {
+                            hs.stopSelf();
+                        }
                         ContainerManager.stop(mContainerName);
                         finish();
                     })
-                    .setNeutralButton(android.R.string.cancel, (dialog, which) -> {
-                    })
+                    .setNeutralButton(android.R.string.cancel, (dialog, which) -> {})
                     .setNegativeButton(R.string.no, (dialog, which) -> {
                         super.onBackPressed();
                     })
@@ -104,7 +107,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Lets never destroy primary display
+        // Destroyed in HardwareService when user decides to stop container
         if (mDisplayID != 0) {
             nativeDisplayDestroyed(mDisplayID);
             nativeStopInputDevice(mDisplayID);

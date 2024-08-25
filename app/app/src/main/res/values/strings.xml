@@ -8,13 +8,15 @@
     <string name="not_running_message">Lindroid container currently isn\'t running, do you want to start it?.</string>
     <string name="stop_title">Stop Linux subsystem</string>
     <string name="stop_message">Do you want to stop the Linux subsystem?</string>
-    <string name="creating_container_title">Creating container...</string>
+    <string name="creating_container_title">Creating container…</string>
     <string name="creating_container_message">Please be patient</string>
     <string name="no_container_title">No container found</string>
     <string name="no_container_message">Do you want to create one?</string>
     <string name="notification_channel_name">Notification channel</string>
     <string name="running_notif_title">Lindroid is running</string>
     <string name="running_notif_message">A virtual display has been put in background. Open the Lindroid app to return to the display.</string>
-
-
+	<string name="failed_to_create">Failed to create container</string>
+	<string name="failed_to_create_msg">The container creation has failed. Please check logs for more information.</string>
+	<string name="failed_to_start">Failed to start</string>
+	<string name="failed_to_start_msg">The container couldn\'t be started. Please check log for more details.</string>
 </resources>

@@ -16,8 +16,7 @@ public class ContainerManager {
     private static final String TAG = "ContainerManager";
     private static IPerspective mPerspective;
 
-    private ContainerManager() {
-    } // no init
+    private ContainerManager() {} // no init
 
     private static void getPerspectiveIfNeeded() {
         if (mPerspective != null) return;

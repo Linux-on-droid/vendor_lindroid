@@ -220,8 +220,8 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
     surface->connect(NATIVE_WINDOW_API_EGL, false, mDisplays[displayId]->listener);
 
     if (!mDisplays[displayId]->plugged && mCallbacks != nullptr) {
-        mCallbacks->onHotplugReceived(mSequenceId, displayId, true, displayId == 0);
         mDisplays[displayId]->plugged = true;
+        mCallbacks->onHotplugReceived(mSequenceId, displayId, true, displayId == 0);
     }
     if (needRefresh && mCallbacks != nullptr) {
         mCallbacks->onRefreshReceived(mSequenceId, displayId);

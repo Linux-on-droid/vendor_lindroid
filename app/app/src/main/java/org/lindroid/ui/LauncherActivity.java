@@ -27,21 +27,14 @@ public class LauncherActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        checkContainerAndStartDisplayActivities();
-    }
-
-    private void checkContainerAndStartDisplayActivities() {
         boolean containerExists = ContainerManager.containerExists(DEFAULT_CONTAINER_NAME);
         boolean isRunning = containerExists && ContainerManager.isRunning(DEFAULT_CONTAINER_NAME);
 
-        if (!containerExists) {
-            showCreateContainerDialog();
-        } else if (!isRunning) {
-            showStartContainerDialog();
-        } else {
-            startDisplayActivitiesOnAllDisplays();
+        if (isRunning) {
+            startDisplayActivitiesOnAllDisplays(DEFAULT_CONTAINER_NAME);
+            return;
         }
+        setContentView(R.layout.launcher);
     }
 
     private void showCreateContainerDialog() {
@@ -51,7 +44,7 @@ public class LauncherActivity extends Activity {
                         .setMessage(R.string.no_container_message)
                         .setPositiveButton(android.R.string.ok, (dialog, which) -> {
                             createContainer();
-                            startDisplayActivitiesOnAllDisplays();
+                            startDisplayActivitiesOnAllDisplays(DEFAULT_CONTAINER_NAME);
                         })
                         .setNegativeButton(android.R.string.cancel, (dialog, which) -> finish())
                         .setIcon(R.drawable.ic_help)
@@ -64,9 +57,7 @@ public class LauncherActivity extends Activity {
                 .setTitle(R.string.not_running_title)
                 .setMessage(R.string.not_running_message)
                 .setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                    startContainer();
-                    finish();
-                    startDisplayActivitiesOnAllDisplays();
+                    startOrError(() -> startDisplayActivitiesOnAllDisplays(DEFAULT_CONTAINER_NAME));
                 })
                 .setNegativeButton(android.R.string.cancel, (dialog, which) -> finish())
                 .setIcon(R.drawable.ic_help)
@@ -82,36 +73,58 @@ public class LauncherActivity extends Activity {
                 .setView(v)
                 .show();
         new Thread(() -> {
-            ContainerManager.addContainer(DEFAULT_CONTAINER_NAME, new File(getFilesDir(), "rootfs.tar.gz"));
-            ContainerManager.start(DEFAULT_CONTAINER_NAME);
-            new Handler(Looper.getMainLooper()).post(inner::dismiss);
+            if (ContainerManager.addContainer(DEFAULT_CONTAINER_NAME,
+                    new File(getFilesDir(), "rootfs.tar.gz"))) {
+                startOrError(inner::dismiss);
+            } else {
+                runOnUiThread(() -> new MaterialAlertDialogBuilder(LauncherActivity.this)
+                        .setTitle(R.string.failed_to_create)
+                        .setMessage(R.string.failed_to_create_msg)
+                        .setPositiveButton(android.R.string.ok, (dialog, which) -> {})
+                        .setCancelable(false)
+                        .setIcon(R.drawable.ic_warning)
+                        .show());
+            }
         }).start();
     }
 
-    private void startContainer() {
-        ContainerManager.start(DEFAULT_CONTAINER_NAME);
+    private void startOrError(Runnable next) {
+        new Thread(() -> {
+            if (!ContainerManager.start(DEFAULT_CONTAINER_NAME)) {
+                runOnUiThread(next);
+            } else {
+                runOnUiThread(() -> new MaterialAlertDialogBuilder(LauncherActivity.this)
+                        .setTitle(R.string.failed_to_start)
+                        .setMessage(R.string.failed_to_start_msg)
+                        .setPositiveButton(android.R.string.ok, (dialog, which) -> {})
+                        .setCancelable(false)
+                        .setIcon(R.drawable.ic_warning)
+                        .show());
+            }
+        }).start();
     }
 
-    private void startDisplayActivitiesOnAllDisplays() {
+    private void startDisplayActivitiesOnAllDisplays(String containerName) {
         DisplayManager displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
         Display[] displays = displayManager.getDisplays();
+        // int currentId = Objects.requireNonNull(getDisplay()).getDisplayId();
 
+        // TODO don't do this on foldable's other internal displays
         for (Display display : displays) {
-            long displayId = display.getDisplayId();
+            if ((display.getFlags() & Display.FLAG_PRIVATE) != 0)
+                continue;
+            int displayId = display.getDisplayId();
             Log.d(TAG, "Starting DisplayActivity on display: " + displayId);
-            launchNewDisplayActivity(displayId, DEFAULT_CONTAINER_NAME);
+            Intent intent = new Intent(this, DisplayActivity.class);
+            intent.putExtra("displayID", displayId);
+            intent.putExtra("containerName", containerName);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
+            ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchDisplayId(displayId);
+
+            startActivity(intent, options.toBundle());
         }
-    }
-
-    private void launchNewDisplayActivity(long displayId, String containerName) {
-        Intent intent = new Intent(this, DisplayActivity.class);
-        intent.putExtra("displayID", displayId);
-        intent.putExtra("containerName", containerName);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
-        ActivityOptions options = ActivityOptions.makeBasic();
-        options.setLaunchDisplayId((int) displayId);
-
-        startActivity(intent, options.toBundle());
+        finish();
     }
 
     @Override

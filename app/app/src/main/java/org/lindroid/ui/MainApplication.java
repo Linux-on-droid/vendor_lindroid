@@ -18,7 +18,7 @@ public class MainApplication extends Application {
         // Apply dynamic color
         DynamicColors.applyToActivitiesIfAvailable(this);
 
-        // We're alive until we aren't. If there's anything worth
+        // We're alive until we aren't, so this is fine to put here
         Thread composerThread = new Thread(NativeLib::nativeStartComposerService);
         composerThread.start();
         nativeInitInputDevice();
