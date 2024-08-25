@@ -1,16 +1,24 @@
 package org.lindroid.ui;
 
-import static org.lindroid.ui.NativeLib.*;
+import static org.lindroid.ui.NativeLib.nativeDisplayDestroyed;
+import static org.lindroid.ui.NativeLib.nativeKeyEvent;
+import static org.lindroid.ui.NativeLib.nativePointerButtonEvent;
+import static org.lindroid.ui.NativeLib.nativePointerMotionEvent;
+import static org.lindroid.ui.NativeLib.nativePointerScrollEvent;
+import static org.lindroid.ui.NativeLib.nativeReconfigureInputDevice;
+import static org.lindroid.ui.NativeLib.nativeStopInputDevice;
+import static org.lindroid.ui.NativeLib.nativeSurfaceChanged;
+import static org.lindroid.ui.NativeLib.nativeSurfaceCreated;
+import static org.lindroid.ui.NativeLib.nativeSurfaceDestroyed;
+import static org.lindroid.ui.NativeLib.nativeTouchEvent;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.InputDevice;
-import android.os.Bundle;
 import android.util.Log;
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.PointerIcon;
@@ -21,65 +29,72 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 
-public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnTouchListener, View.OnHoverListener, View.OnGenericMotionListener {
-    private static final String TAG = "Lindroid";
-    private String mContainerName = "default";
-    private long mDisplayID = 0;
-    private ContainerManager containerManager;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import java.util.Objects;
+
+public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.Callback,
+        View.OnTouchListener,
+        View.OnHoverListener,
+        View.OnGenericMotionListener {
+    private static final String TAG = "DisplayActivity";
+    private static Handler mHandler; // globally makes sure the calls are ordered
+    private String mContainerName;
+    private int mDisplayID = 0;
     private int mPreviousWidth = 0;
     private int mPreviousHeight = 0;
-    private static Handler mHandler;
     private Runnable mSurfaceRunnable;
 
-
     @Override
+    @SuppressLint("ClickableViewAccessibility") // use screen reader inside linux
     protected void onCreate(Bundle savedInstanceState) {
+        int displayID = getIntent().getIntExtra("displayID", 0);
+        String containerName = getIntent().getStringExtra("containerName");
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.display_activity);
-        containerManager = new ContainerManager();
+        if (HardwareService.getInstance() == null) {
+            startForegroundService(new Intent(this, HardwareService.class));
+        }
+        SurfaceView mSurfaceView = new SurfaceView(this);
+        setContentView(mSurfaceView);
         final WindowInsetsController controller = getWindow().getInsetsController();
         if (controller != null) {
             controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
             controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         }
-        long displayID = getIntent().getLongExtra("displayID", 0);
-        String containerName = getIntent().getStringExtra("containerName");
-        Log.d(TAG, "Starting container: " + containerName + " on disp: " + displayID);
-        start(displayID, containerName);
-
-    }
-
-    public void start(long displayID, String containerName) {
+        Log.d(TAG, "Starting container: " + containerName + " on display: " + displayID);
         mDisplayID = displayID;
         mContainerName = containerName;
 
         if (mHandler == null)
             mHandler = new Handler(Looper.getMainLooper());
-        SurfaceView sv = findViewById(R.id.surfaceView);
-        SurfaceHolder sh = sv.getHolder();
-        sv.setOnTouchListener(this);
-        sv.setOnHoverListener(this);
-        sv.setOnGenericMotionListener(this);
+        SurfaceHolder sh = mSurfaceView.getHolder();
+        mSurfaceView.setOnTouchListener(this);
+        mSurfaceView.setOnHoverListener(this);
+        mSurfaceView.setOnGenericMotionListener(this);
         sh.addCallback(this);
 
         // Hide pointer icon
-        sv.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
+        mSurfaceView.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
     }
 
     @Override
     public void onBackPressed() {
-        if(containerManager.isRunning(mContainerName)) {
+        if (mDisplayID == 0 && mContainerName != null && ContainerManager.isRunning(mContainerName)) {
             new MaterialAlertDialogBuilder(this)
                     .setTitle(R.string.stop_title)
                     .setMessage(R.string.stop_message)
                     .setPositiveButton(R.string.yes, (dialog, which) -> {
-                        containerManager.stop(mContainerName);
-                        dialog.dismiss();
+                        HardwareService hs = HardwareService.getInstance();
+                        if (hs != null) {
+                            hs.stopSelf();
+                        }
+                        ContainerManager.stop(mContainerName);
                         finish();
                     })
-                    .setNeutralButton(android.R.string.cancel, (dialog, which) -> {
-                        dialog.dismiss();
-                    })
+                    .setNeutralButton(android.R.string.cancel, (dialog, which) -> {})
                     .setNegativeButton(R.string.no, (dialog, which) -> {
                         super.onBackPressed();
                     })
@@ -92,7 +107,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Lets never destroy primary display
+        // Destroyed in HardwareService when user decides to stop container
         if (mDisplayID != 0) {
             nativeDisplayDestroyed(mDisplayID);
             nativeStopInputDevice(mDisplayID);
@@ -145,9 +160,10 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         return true;
     }
 
+    @SuppressLint("ClickableViewAccessibility") // see above
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
-        if(motionEvent.getSource() == InputDevice.SOURCE_MOUSE) {
+        if (motionEvent.getSource() == InputDevice.SOURCE_MOUSE) {
             onGenericMotion(view, motionEvent);
             return onHover(view, motionEvent);
         }
@@ -182,6 +198,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     @Override
     public void onPointerCaptureChanged(boolean hasCapture) {
         super.onPointerCaptureChanged(hasCapture);
+        // TODO implement pointer capture
     }
 
     @Override
@@ -194,21 +211,18 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
 
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
-        mHandler.removeCallbacksAndMessages(null);
-
-        mSurfaceRunnable = () -> {
-            applySurfaceChanges(holder, format, w, h);
-        };
-
+        mHandler.removeCallbacksAndMessages(mSurfaceRunnable);
+        mSurfaceRunnable = () -> applySurfaceChanges(holder, format, w, h);
         mHandler.postDelayed(mSurfaceRunnable, 200);
     }
 
     private void applySurfaceChanges(@NonNull SurfaceHolder holder, int format, int w, int h) {
+        // TODO format?
         Surface surface = holder.getSurface();
         if (surface != null) {
             float refresh = 60.0f;
             try {
-                refresh = getDisplay().getRefreshRate();
+                refresh = Objects.requireNonNull(getDisplay()).getRefreshRate();
             } catch (Exception e) {
                 Log.e(TAG, "Failed to get display refresh rate", e);
             }

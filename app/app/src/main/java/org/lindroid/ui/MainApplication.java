@@ -1,7 +1,8 @@
 package org.lindroid.ui;
 
+import static org.lindroid.ui.NativeLib.nativeInitInputDevice;
+
 import android.app.Application;
-import android.content.Intent;
 import android.util.Log;
 
 import com.google.android.material.color.DynamicColors;
@@ -17,8 +18,9 @@ public class MainApplication extends Application {
         // Apply dynamic color
         DynamicColors.applyToActivitiesIfAvailable(this);
 
-        if (!HardwareService.isInstanceCreated()) {
-            startService(new Intent(this, HardwareService.class));
-        }
+        // We're alive until we aren't, so this is fine to put here
+        Thread composerThread = new Thread(NativeLib::nativeStartComposerService);
+        composerThread.start();
+        nativeInitInputDevice();
     }
 }
