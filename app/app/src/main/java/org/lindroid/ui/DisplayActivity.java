@@ -1,25 +1,17 @@
 package org.lindroid.ui;
 
-import static org.lindroid.ui.Constants.PERSPECTIVE_SERVICE_NAME;
 import static org.lindroid.ui.NativeLib.*;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.os.ParcelFileDescriptor;
-import android.view.Display;
 import android.view.InputDevice;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.util.Log;
-import android.os.IBinder;
-import android.os.ServiceManager;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.PointerIcon;
 import android.view.Surface;
@@ -28,13 +20,6 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
-import android.widget.TextView;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.List;
-
-import vendor.lindroid.perspective.IPerspective;
 
 public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnTouchListener, View.OnHoverListener, View.OnGenericMotionListener {
     private static final String TAG = "Lindroid";

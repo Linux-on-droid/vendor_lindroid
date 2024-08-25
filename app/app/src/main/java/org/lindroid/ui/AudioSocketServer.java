@@ -1,5 +1,6 @@
 package org.lindroid.ui;
 
+import android.annotation.SuppressLint;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -10,7 +11,6 @@ import android.net.LocalSocket;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
-import android.system.UnixSocketAddress;
 import android.util.Log;
 
 import java.io.File;
@@ -18,6 +18,9 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
@@ -52,7 +55,7 @@ public class AudioSocketServer {
                     FileDescriptor socketFd = Os.socket(OsConstants.AF_UNIX, OsConstants.SOCK_STREAM, 0);
 
                     // Bind the socket to the file path
-                    Os.bind(socketFd, UnixSocketAddress.createFileSystem(SOCKET_PATH));
+                    Os.bind(socketFd, createUnixSocketAddressObj(SOCKET_PATH));
 
                     // Set the socket to listen for incoming connections
                     Os.listen(socketFd, 50);
@@ -177,6 +180,18 @@ public class AudioSocketServer {
         if (audioTrack != null) {
             audioTrack.stop();
             audioTrack.release();
+        }
+    }
+
+    @SuppressLint("BlockedPrivateApi")
+    private SocketAddress createUnixSocketAddressObj(String path) {
+        try {
+            Class<?> myClass = Class.forName("android.system.UnixSocketAddress");
+            Method method = myClass.getDeclaredMethod("createFileSystem", String.class);
+            return (SocketAddress) method.invoke(null, path);
+        } catch (NoSuchMethodException | ClassNotFoundException | IllegalAccessException |
+                 InvocationTargetException e) {
+            throw new RuntimeException(e);
         }
     }
 }
