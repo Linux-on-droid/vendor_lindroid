@@ -4,8 +4,8 @@ import android.annotation.SuppressLint;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.AudioRecord;
 import android.media.AudioTrack;
-import android.media.AudioRecord ;
 import android.media.MediaRecorder;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
@@ -19,9 +19,9 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 public class AudioSocketServer {
@@ -37,7 +37,7 @@ public class AudioSocketServer {
     private AudioTrack audioTrack;
     private AudioRecord audioRecord;
 
-	public void startServer() {
+    public void startServer() {
         executor.execute(() -> {
             try {
                 // Remove existing socket file if it exists
@@ -140,14 +140,14 @@ public class AudioSocketServer {
         int sampleRate = 48000;
         int channelConfig = AudioFormat.CHANNEL_IN_MONO;
         int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-	    int minBufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat);
+        int minBufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat);
 
         audioRecord = new AudioRecord(
                 MediaRecorder.AudioSource.MIC,
                 sampleRate,
                 channelConfig,
                 audioFormat,
-		        minBufferSize
+                minBufferSize
         );
 
         audioRecord.startRecording();
@@ -177,12 +177,12 @@ public class AudioSocketServer {
     public void stopServer() {
         executor.shutdown();
         try {
-		    if (!executor.awaitTermination(100, TimeUnit.MILLISECONDS))
+            if (!executor.awaitTermination(100, TimeUnit.MILLISECONDS))
                 executor.shutdownNow();
         } catch (InterruptedException e) {
-		    throw new RuntimeException(e); // who dares interrupt the main thread?
-	    }
-	    isRunning = false;
+            throw new RuntimeException(e); // who dares interrupt the main thread?
+        }
+        isRunning = false;
         if (serverSocket != null) {
             try {
                 serverSocket.close();

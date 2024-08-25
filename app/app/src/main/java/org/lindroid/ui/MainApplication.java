@@ -3,7 +3,6 @@ package org.lindroid.ui;
 import static org.lindroid.ui.NativeLib.nativeInitInputDevice;
 
 import android.app.Application;
-import android.content.Intent;
 import android.util.Log;
 
 import com.google.android.material.color.DynamicColors;

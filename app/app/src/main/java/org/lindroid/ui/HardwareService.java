@@ -17,6 +17,10 @@ public class HardwareService extends Service {
     private AudioSocketServer audioSocketServer;
     private boolean started = false;
 
+    public static boolean isInstanceCreated() {
+        return instance != null;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -68,10 +72,6 @@ public class HardwareService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
-    }
-
-    public static boolean isInstanceCreated() {
-        return instance != null;
     }
 
     @Override

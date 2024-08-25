@@ -1,20 +1,20 @@
 package org.lindroid.ui;
 
-import androidx.appcompat.app.AlertDialog;
-
-import android.os.Handler;
-import android.os.Looper;
 import android.app.Activity;
 import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Display;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AlertDialog;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -46,16 +46,16 @@ public class LauncherActivity extends Activity {
 
     private void showCreateContainerDialog() {
         runOnUiThread(() ->
-            new MaterialAlertDialogBuilder(LauncherActivity.this)
-                    .setTitle(R.string.no_container_title)
-                    .setMessage(R.string.no_container_message)
-                    .setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                        createContainer();
-                        startDisplayActivitiesOnAllDisplays();
-                    })
-                    .setNegativeButton(android.R.string.cancel, (dialog, which) -> finish())
-                    .setIcon(R.drawable.ic_help)
-                    .show()
+                new MaterialAlertDialogBuilder(LauncherActivity.this)
+                        .setTitle(R.string.no_container_title)
+                        .setMessage(R.string.no_container_message)
+                        .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                            createContainer();
+                            startDisplayActivitiesOnAllDisplays();
+                        })
+                        .setNegativeButton(android.R.string.cancel, (dialog, which) -> finish())
+                        .setIcon(R.drawable.ic_help)
+                        .show()
         );
     }
 
@@ -77,10 +77,10 @@ public class LauncherActivity extends Activity {
         View v = LayoutInflater.from(this).inflate(R.layout.progressdialog, null);
         ((TextView) v.findViewById(R.id.prog_message)).setText(R.string.creating_container_message);
         AlertDialog inner = new MaterialAlertDialogBuilder(this)
-                            .setCancelable(false)
-                            .setTitle(R.string.creating_container_title)
-                            .setView(v)
-                            .show();
+                .setCancelable(false)
+                .setTitle(R.string.creating_container_title)
+                .setView(v)
+                .show();
         new Thread(() -> {
             ContainerManager.addContainer(DEFAULT_CONTAINER_NAME, new File(getFilesDir(), "rootfs.tar.gz"));
             ContainerManager.start(DEFAULT_CONTAINER_NAME);

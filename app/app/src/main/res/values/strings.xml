@@ -12,8 +12,8 @@
     <string name="creating_container_message">Please be patient</string>
     <string name="no_container_title">No container found</string>
     <string name="no_container_message">Do you want to create one?</string>
-	<string name="notification_channel_name">Notification channel</string>
-	<string name="running_notif_title">Lindroid is running</string>
+    <string name="notification_channel_name">Notification channel</string>
+    <string name="running_notif_title">Lindroid is running</string>
     <string name="running_notif_message">A virtual display has been put in background. Open the Lindroid app to return to the display.</string>
 
 

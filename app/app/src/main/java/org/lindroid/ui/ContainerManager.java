@@ -5,6 +5,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.util.Log;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -15,7 +16,8 @@ public class ContainerManager {
     private static final String TAG = "ContainerManager";
     private static IPerspective mPerspective;
 
-    private ContainerManager() {} // no init
+    private ContainerManager() {
+    } // no init
 
     private static void getPerspectiveIfNeeded() {
         if (mPerspective != null) return;
@@ -110,6 +112,6 @@ public class ContainerManager {
     }
 
     public static boolean containerExists(String containerName) {
-	    return listContainers().contains(containerName);
+        return listContainers().contains(containerName);
     }
 }

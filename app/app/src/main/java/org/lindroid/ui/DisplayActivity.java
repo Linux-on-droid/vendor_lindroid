@@ -1,18 +1,24 @@
 package org.lindroid.ui;
 
-import static org.lindroid.ui.NativeLib.*;
-
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
+import static org.lindroid.ui.NativeLib.nativeDisplayDestroyed;
+import static org.lindroid.ui.NativeLib.nativeKeyEvent;
+import static org.lindroid.ui.NativeLib.nativePointerButtonEvent;
+import static org.lindroid.ui.NativeLib.nativePointerMotionEvent;
+import static org.lindroid.ui.NativeLib.nativePointerScrollEvent;
+import static org.lindroid.ui.NativeLib.nativeReconfigureInputDevice;
+import static org.lindroid.ui.NativeLib.nativeStopInputDevice;
+import static org.lindroid.ui.NativeLib.nativeSurfaceChanged;
+import static org.lindroid.ui.NativeLib.nativeSurfaceCreated;
+import static org.lindroid.ui.NativeLib.nativeSurfaceDestroyed;
+import static org.lindroid.ui.NativeLib.nativeTouchEvent;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.InputDevice;
-import android.os.Bundle;
 import android.util.Log;
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.PointerIcon;
@@ -23,6 +29,11 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
 import java.util.Objects;
 
 public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.Callback,
@@ -30,18 +41,18 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         View.OnHoverListener,
         View.OnGenericMotionListener {
     private static final String TAG = "Lindroid";
+    private static Handler mHandler; // globally makes sure the calls are ordered
     private String mContainerName = "default";
     private long mDisplayID = 0;
     private int mPreviousWidth = 0;
     private int mPreviousHeight = 0;
-    private static Handler mHandler; // globally makes sure the calls are ordered
-	private Runnable mSurfaceRunnable;
+    private Runnable mSurfaceRunnable;
 
     @Override
     @SuppressLint("ClickableViewAccessibility") // use screen reader inside linux
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-	    SurfaceView mSurfaceView = new SurfaceView(this);
+        SurfaceView mSurfaceView = new SurfaceView(this);
         setContentView(mSurfaceView);
         final WindowInsetsController controller = getWindow().getInsetsController();
         if (controller != null) {
@@ -79,7 +90,8 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
                         ContainerManager.stop(mContainerName);
                         finish();
                     })
-                    .setNeutralButton(android.R.string.cancel, (dialog, which) -> {})
+                    .setNeutralButton(android.R.string.cancel, (dialog, which) -> {
+                    })
                     .setNegativeButton(R.string.no, (dialog, which) -> {
                         super.onBackPressed();
                     })
@@ -148,7 +160,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     @SuppressLint("ClickableViewAccessibility") // see above
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
-        if(motionEvent.getSource() == InputDevice.SOURCE_MOUSE) {
+        if (motionEvent.getSource() == InputDevice.SOURCE_MOUSE) {
             onGenericMotion(view, motionEvent);
             return onHover(view, motionEvent);
         }
