@@ -1,12 +1,13 @@
 package org.lindroid.ui;
 
+import android.content.ContentResolver;
+import android.net.Uri;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.util.Log;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -40,12 +41,12 @@ public class ContainerManager {
         }
     }
 
-    public static boolean isAtLeastOneRunning() {
+    public static String isAtLeastOneRunning() {
         for (String id : listContainers()) {
             if (isRunning(id))
-                return true;
+                return id;
         }
-        return false;
+        return null;
     }
 
     public static boolean start(String containerName) {
@@ -80,10 +81,9 @@ public class ContainerManager {
         }
     }
 
-    public static boolean addContainer(String containerName, File rootfsFile) {
+    public static boolean addContainer(String containerName, ContentResolver cr, Uri rootfs) {
         getPerspectiveIfNeeded();
-        try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(rootfsFile,
-                ParcelFileDescriptor.MODE_READ_ONLY)) {
+        try (ParcelFileDescriptor pfd = cr.openFileDescriptor(rootfs, "r")) {
             if (mPerspective.addContainer(containerName, pfd)) {
                 Log.d(TAG, "Container " + containerName + " added successfully.");
                 return true;
@@ -108,9 +108,5 @@ public class ContainerManager {
             mPerspective = null;
             throw new RuntimeException(e);
         }
-    }
-
-    public static boolean containerExists(String containerName) {
-        return listContainers().contains(containerName);
     }
 }

@@ -19,4 +19,6 @@
 	<string name="failed_to_create_msg">The container creation has failed. Please check logs for more information.</string>
 	<string name="failed_to_start">Failed to start</string>
 	<string name="failed_to_start_msg">The container couldn\'t be started. Please check log for more details.</string>
+	<string name="not_running">Not running</string>
+	<string name="running">Running</string>
 </resources>

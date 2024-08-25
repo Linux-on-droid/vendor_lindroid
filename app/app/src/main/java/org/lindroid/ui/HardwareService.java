@@ -42,7 +42,7 @@ public class HardwareService extends Service {
             public void run() {
                 // Activity is supposed to clean us up, but if it doesn't happen, let's not
                 // waste user's battery life.
-                if (!ContainerManager.isAtLeastOneRunning())
+                if (ContainerManager.isAtLeastOneRunning() == null)
                     stopSelf();
                 else
                     handler.postDelayed(this, 5 * 60 * 1000);

@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="org.lindroid.ui"
-    android:sharedUserId="android.uid.system">
+    android:sharedUserId="android.uid.system"
+    tools:ignore="Deprecated">
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -41,9 +42,5 @@
             android:exported="false"
             android:foregroundServiceType="systemExempted"
             tools:ignore="ForegroundServicePermission" />
-
-        <meta-data
-            android:name="android.allow_multiple_resumed_activities"
-            android:value="true" />
     </application>
 </manifest>
