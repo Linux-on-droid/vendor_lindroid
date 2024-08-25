@@ -5,6 +5,8 @@
     android:sharedUserId="android.uid.system">
 
 	<uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED"/>
 	<uses-permission android:name="android.permission.VIRTUAL_INPUT_DEVICE"
         tools:ignore="ProtectedPermissions" />
 
@@ -13,8 +15,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Lindroid"
-        android:persistent="true">
+        android:theme="@style/Theme.Lindroid">
 
         <!-- Launcher Activity -->
         <activity
@@ -30,13 +31,15 @@
         <!-- Display Activity -->
         <activity
             android:name=".DisplayActivity"
-            android:taskAffinity="cover.container" >
+            android:taskAffinity="cover.container">
             <!-- This activity does not need to be directly launched -->
         </activity>
 
         <service
             android:name=".HardwareService"
-            android:exported="true"/>
+            android:exported="false"
+            android:foregroundServiceType="systemExempted"
+	        tools:ignore="ForegroundServicePermission" />
 
         <meta-data
             android:name="android.allow_multiple_resumed_activities"

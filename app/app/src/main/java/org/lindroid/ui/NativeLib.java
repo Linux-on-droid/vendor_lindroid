@@ -21,5 +21,4 @@ public class NativeLib {
     public static native void nativePointerMotionEvent(long displayId, int x, int y);
     public static native void nativePointerButtonEvent(long displayId, int button, int x, int y, boolean isDown);
     public static native void nativePointerScrollEvent(long displayId, int value, boolean isVertical);
-
 }

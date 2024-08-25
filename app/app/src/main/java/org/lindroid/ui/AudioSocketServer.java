@@ -176,7 +176,7 @@ public class AudioSocketServer {
 
     public void stopServer() {
         executor.shutdown();
-	    try {
+        try {
 		    if (!executor.awaitTermination(100, TimeUnit.MILLISECONDS))
                 executor.shutdownNow();
         } catch (InterruptedException e) {

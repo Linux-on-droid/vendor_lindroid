@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.InputDevice;
@@ -24,21 +25,24 @@ import android.view.WindowInsetsController;
 
 import java.util.Objects;
 
-public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnTouchListener, View.OnHoverListener, View.OnGenericMotionListener {
+public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.Callback,
+        View.OnTouchListener,
+        View.OnHoverListener,
+        View.OnGenericMotionListener {
     private static final String TAG = "Lindroid";
     private String mContainerName = "default";
     private long mDisplayID = 0;
-    private ContainerManager containerManager;
     private int mPreviousWidth = 0;
     private int mPreviousHeight = 0;
-    private static Handler mHandler;
-    private Runnable mSurfaceRunnable;
+    private static Handler mHandler; // globally makes sure the calls are ordered
+	private Runnable mSurfaceRunnable;
 
     @Override
+    @SuppressLint("ClickableViewAccessibility") // use screen reader inside linux
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.display_activity);
-        containerManager = new ContainerManager();
+	    SurfaceView mSurfaceView = new SurfaceView(this);
+        setContentView(mSurfaceView);
         final WindowInsetsController controller = getWindow().getInsetsController();
         if (controller != null) {
             controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
@@ -47,37 +51,32 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         long displayID = getIntent().getLongExtra("displayID", 0);
         String containerName = getIntent().getStringExtra("containerName");
         Log.d(TAG, "Starting container: " + containerName + " on disp: " + displayID);
-        start(displayID, containerName);
-
-
-    }
-
-    @SuppressLint("ClickableViewAccessibility") // use screen reader inside linux
-    public void start(long displayID, String containerName) {
+        if (!HardwareService.isInstanceCreated()) {
+            startForegroundService(new Intent(this, HardwareService.class));
+        }
         mDisplayID = displayID;
         mContainerName = containerName;
 
         if (mHandler == null)
             mHandler = new Handler(Looper.getMainLooper());
-        SurfaceView sv = findViewById(R.id.surfaceView);
-        SurfaceHolder sh = sv.getHolder();
-        sv.setOnTouchListener(this);
-        sv.setOnHoverListener(this);
-        sv.setOnGenericMotionListener(this);
+        SurfaceHolder sh = mSurfaceView.getHolder();
+        mSurfaceView.setOnTouchListener(this);
+        mSurfaceView.setOnHoverListener(this);
+        mSurfaceView.setOnGenericMotionListener(this);
         sh.addCallback(this);
 
         // Hide pointer icon
-        sv.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
+        mSurfaceView.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
     }
 
     @Override
     public void onBackPressed() {
-        if(containerManager.isRunning(mContainerName)) {
+        if (ContainerManager.isRunning(mContainerName)) {
             new MaterialAlertDialogBuilder(this)
                     .setTitle(R.string.stop_title)
                     .setMessage(R.string.stop_message)
                     .setPositiveButton(R.string.yes, (dialog, which) -> {
-                        containerManager.stop(mContainerName);
+                        ContainerManager.stop(mContainerName);
                         finish();
                     })
                     .setNeutralButton(android.R.string.cancel, (dialog, which) -> {})
@@ -184,6 +183,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     @Override
     public void onPointerCaptureChanged(boolean hasCapture) {
         super.onPointerCaptureChanged(hasCapture);
+        // TODO implement pointer capture
     }
 
     @Override

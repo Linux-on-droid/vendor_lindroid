@@ -6,16 +6,19 @@ import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.util.Log;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 
 import vendor.lindroid.perspective.IPerspective;
 
 public class ContainerManager {
     private static final String TAG = "ContainerManager";
-    private final IPerspective mPerspective;
+    private static IPerspective mPerspective;
 
-    public ContainerManager() {
+    private ContainerManager() {} // no init
+
+    private static void getPerspectiveIfNeeded() {
+        if (mPerspective != null) return;
         // Fetch the Perspective service
         final IBinder binder = ServiceManager.getService(Constants.PERSPECTIVE_SERVICE_NAME);
         if (binder == null) {
@@ -26,16 +29,26 @@ public class ContainerManager {
         }
     }
 
-    public boolean isRunning(String containerName) {
+    public static boolean isRunning(String containerName) {
+        getPerspectiveIfNeeded();
         try {
             return mPerspective.isRunning(containerName);
         } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException in isRunning", e);
-            return false;
+            mPerspective = null;
+            throw new RuntimeException(e);
         }
     }
 
-    public boolean start(String containerName) {
+    public static boolean isAtLeastOneRunning() {
+        for (String id : listContainers()) {
+            if (isRunning(id))
+                return true;
+        }
+        return false;
+    }
+
+    public static boolean start(String containerName) {
+        getPerspectiveIfNeeded();
         try {
             if (mPerspective.start(containerName)) {
                 Log.d(TAG, "Container " + containerName + " started successfully.");
@@ -45,12 +58,13 @@ public class ContainerManager {
                 return false;
             }
         } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException in start", e);
-            return false;
+            mPerspective = null;
+            throw new RuntimeException(e);
         }
     }
 
-    public boolean stop(String containerName) {
+    public static boolean stop(String containerName) {
+        getPerspectiveIfNeeded();
         try {
             if (mPerspective.stop(containerName)) {
                 Log.d(TAG, "Container " + containerName + " stopped successfully.");
@@ -60,15 +74,15 @@ public class ContainerManager {
                 return false;
             }
         } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException in stop", e);
-            return false;
+            mPerspective = null;
+            throw new RuntimeException(e);
         }
     }
 
-    public boolean addContainer(String containerName, File rootfsFile) {
-        try {
-            ParcelFileDescriptor pfd = ParcelFileDescriptor.open(rootfsFile,
-                    ParcelFileDescriptor.MODE_READ_ONLY);
+    public static boolean addContainer(String containerName, File rootfsFile) {
+        getPerspectiveIfNeeded();
+        try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(rootfsFile,
+                ParcelFileDescriptor.MODE_READ_ONLY)) {
             if (mPerspective.addContainer(containerName, pfd)) {
                 Log.d(TAG, "Container " + containerName + " added successfully.");
                 return true;
@@ -77,31 +91,25 @@ public class ContainerManager {
                 return false;
             }
         } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException in addContainer", e);
-            return false;
-        } catch (FileNotFoundException e) {
-            Log.e(TAG, "FileNotFoundException in addContainer", e);
+            mPerspective = null;
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            Log.e(TAG, "IOException in addContainer", e);
             return false;
         }
     }
 
-    public List<String> listContainers() {
+    public static List<String> listContainers() {
+        getPerspectiveIfNeeded();
         try {
             return mPerspective.listContainers();
         } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException in listContainers", e);
-            return null;
+            mPerspective = null;
+            throw new RuntimeException(e);
         }
     }
 
-    public Boolean containerExists(String containerName) {
-        try {
-            List<String> containers = listContainers();
-            if (containers == null) return null;
-            return containers.contains(containerName);
-        } catch (Exception e) {
-            Log.e(TAG, "Exception in containerExists", e);
-            return null;
-        }
+    public static boolean containerExists(String containerName) {
+	    return listContainers().contains(containerName);
     }
 }

@@ -7,7 +7,6 @@ import android.os.Looper;
 import android.app.Activity;
 import android.app.ActivityOptions;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
@@ -20,31 +19,21 @@ import android.widget.TextView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 
 public class LauncherActivity extends Activity {
     private static final String TAG = "LauncherActivity";
-    private AudioSocketServer audioSocketServer;
-    private ContainerManager containerManager;
     private static final String DEFAULT_CONTAINER_NAME = "default";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        containerManager = new ContainerManager();
-
-        audioSocketServer = new AudioSocketServer();
-        audioSocketServer.startServer();
-
         checkContainerAndStartDisplayActivities();
     }
 
     private void checkContainerAndStartDisplayActivities() {
-        Boolean containerExists = containerManager.containerExists(DEFAULT_CONTAINER_NAME);
-        if (containerExists == null)
-            throw new RuntimeException("perspectived is gone");
-        boolean isRunning = containerExists && containerManager.isRunning(DEFAULT_CONTAINER_NAME);
+        boolean containerExists = ContainerManager.containerExists(DEFAULT_CONTAINER_NAME);
+        boolean isRunning = containerExists && ContainerManager.isRunning(DEFAULT_CONTAINER_NAME);
 
         if (!containerExists) {
             showCreateContainerDialog();
@@ -64,9 +53,7 @@ public class LauncherActivity extends Activity {
                         createContainer();
                         startDisplayActivitiesOnAllDisplays();
                     })
-                    .setNegativeButton(android.R.string.cancel, (dialog, which) -> {
-                        finish();
-                    })
+                    .setNegativeButton(android.R.string.cancel, (dialog, which) -> finish())
                     .setIcon(R.drawable.ic_help)
                     .show()
         );
@@ -95,14 +82,14 @@ public class LauncherActivity extends Activity {
                             .setView(v)
                             .show();
         new Thread(() -> {
-            containerManager.addContainer(DEFAULT_CONTAINER_NAME, new File(getFilesDir(), "rootfs.tar.gz"));
-            containerManager.start(DEFAULT_CONTAINER_NAME);
+            ContainerManager.addContainer(DEFAULT_CONTAINER_NAME, new File(getFilesDir(), "rootfs.tar.gz"));
+            ContainerManager.start(DEFAULT_CONTAINER_NAME);
             new Handler(Looper.getMainLooper()).post(inner::dismiss);
         }).start();
     }
 
     private void startContainer() {
-        containerManager.start(DEFAULT_CONTAINER_NAME);
+        ContainerManager.start(DEFAULT_CONTAINER_NAME);
     }
 
     private void startDisplayActivitiesOnAllDisplays() {
@@ -130,8 +117,5 @@ public class LauncherActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (audioSocketServer != null) {
-            audioSocketServer.stopServer();
-        }
     }
 }

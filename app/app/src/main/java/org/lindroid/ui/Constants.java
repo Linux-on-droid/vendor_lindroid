@@ -9,6 +9,8 @@ import java.net.SocketAddress;
 public class Constants {
     public static final String PERSPECTIVE_SERVICE_NAME = "perspective";
     public static final String SOCKET_PATH = "/data/lindroid/mnt/audio_socket";
+    public static final String NOTIFICATION_CHANNEL_ID = "service";
+    public static final int NOTIFICATION_ID = 1;
 
     @SuppressLint({"PrivateApi", "BlockedPrivateApi"})
     public static SocketAddress createUnixSocketAddressObj(String path) {
