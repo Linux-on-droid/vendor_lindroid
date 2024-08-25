@@ -1,6 +1,7 @@
 package org.lindroid.ui;
 
 import android.annotation.SuppressLint;
+import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -18,36 +19,33 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.SocketAddress;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 public class AudioSocketServer {
     private static final byte[] AUDIO_OUTPUT_PREFIX = new byte[] { 0x01 };
     private static final byte AUDIO_INPUT_PREFIX = 0x02;
 
     private static final String TAG = "AudioSocketServer";
-    private static final String SOCKET_PATH = "/data/lindroid/mnt/audio_socket";
 
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private LocalServerSocket serverSocket;
     private boolean isRunning = false;
 
     private AudioTrack audioTrack;
     private AudioRecord audioRecord;
 
-    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-    private int minBufferSize;
-    public void startServer() {
-        Executors.newSingleThreadExecutor().execute(() -> {
+	public void startServer() {
+        executor.execute(() -> {
             try {
                 // Remove existing socket file if it exists
-                File socketFile = new File(SOCKET_PATH);
+                File socketFile = new File(Constants.SOCKET_PATH);
                 if (socketFile.exists()) {
-                    socketFile.delete();
+                    if (!socketFile.delete()) {
+                        Log.w(TAG, "failed to delete socket");
+                    }
                 }
 
                 try {
@@ -55,14 +53,14 @@ public class AudioSocketServer {
                     FileDescriptor socketFd = Os.socket(OsConstants.AF_UNIX, OsConstants.SOCK_STREAM, 0);
 
                     // Bind the socket to the file path
-                    Os.bind(socketFd, createUnixSocketAddressObj(SOCKET_PATH));
+                    Os.bind(socketFd, Constants.createUnixSocketAddressObj(Constants.SOCKET_PATH));
 
                     // Set the socket to listen for incoming connections
                     Os.listen(socketFd, 50);
 
                     serverSocket = new LocalServerSocket(socketFd);
                     isRunning = true;
-                    Log.i(TAG, "Server started at " + SOCKET_PATH);
+                    Log.i(TAG, "Server started at " + Constants.SOCKET_PATH);
 
                     // Initialize AudioTrack and AudioRecord
                     initializeAudioTrack();
@@ -84,7 +82,7 @@ public class AudioSocketServer {
     }
 
     private void sendMicDataToSocket(OutputStream outputStream) {
-        Executors.newSingleThreadExecutor().execute(() -> {
+        executor.execute(() -> {
             byte[] buffer = new byte[10240];
 
             try {
@@ -112,43 +110,51 @@ public class AudioSocketServer {
 
 
     private void initializeAudioTrack() {
-        // Assuming audio is PCM 16-bit, 48000Hz, mono
+        // Assuming audio is PCM 16-bit, 48000Hz, stereo
         int sampleRate = 48000;
         int channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
         int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
 
         int minBufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat);
         audioTrack = new AudioTrack(
-                AudioManager.STREAM_MUSIC,
-                sampleRate,
-                channelConfig,
-                audioFormat,
+                new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_UNKNOWN)
+                        .setUsage(AudioAttributes.USAGE_UNKNOWN)
+                        .setIsContentSpatialized(true)
+                        .build(),
+                new AudioFormat.Builder()
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(channelConfig)
+                        .setEncoding(audioFormat)
+                        .build(),
                 minBufferSize,
-                AudioTrack.MODE_STREAM
+                AudioTrack.MODE_STREAM,
+                AudioManager.AUDIO_SESSION_ID_GENERATE
         );
 
         audioTrack.play();
     }
 
+    @SuppressLint("MissingPermission") // we're system
     private void initializeAudioRecord() {
         int sampleRate = 48000;
         int channelConfig = AudioFormat.CHANNEL_IN_MONO;
         int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-        minBufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat);
+	    int minBufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat);
 
         audioRecord = new AudioRecord(
                 MediaRecorder.AudioSource.MIC,
                 sampleRate,
                 channelConfig,
                 audioFormat,
-                minBufferSize
+		        minBufferSize
         );
 
         audioRecord.startRecording();
     }
 
     private void handleClient(LocalSocket clientSocket) {
-        Executors.newSingleThreadExecutor().execute(() -> {
+        executor.execute(() -> {
             try (InputStream inputStream = clientSocket.getInputStream()) {
                 byte[] buffer = new byte[10240];
                 int bytesRead;
@@ -169,7 +175,14 @@ public class AudioSocketServer {
     }
 
     public void stopServer() {
-        isRunning = false;
+        executor.shutdown();
+	    try {
+		    if (!executor.awaitTermination(100, TimeUnit.MILLISECONDS))
+                executor.shutdownNow();
+        } catch (InterruptedException e) {
+		    throw new RuntimeException(e); // who dares interrupt the main thread?
+	    }
+	    isRunning = false;
         if (serverSocket != null) {
             try {
                 serverSocket.close();
@@ -180,18 +193,6 @@ public class AudioSocketServer {
         if (audioTrack != null) {
             audioTrack.stop();
             audioTrack.release();
-        }
-    }
-
-    @SuppressLint("BlockedPrivateApi")
-    private SocketAddress createUnixSocketAddressObj(String path) {
-        try {
-            Class<?> myClass = Class.forName("android.system.UnixSocketAddress");
-            Method method = myClass.getDeclaredMethod("createFileSystem", String.class);
-            return (SocketAddress) method.invoke(null, path);
-        } catch (NoSuchMethodException | ClassNotFoundException | IllegalAccessException |
-                 InvocationTargetException e) {
-            throw new RuntimeException(e);
         }
     }
 }

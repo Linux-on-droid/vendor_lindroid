@@ -41,7 +41,9 @@ public class LauncherActivity extends Activity {
     }
 
     private void checkContainerAndStartDisplayActivities() {
-        boolean containerExists = containerManager.containerExists(DEFAULT_CONTAINER_NAME);
+        Boolean containerExists = containerManager.containerExists(DEFAULT_CONTAINER_NAME);
+        if (containerExists == null)
+            throw new RuntimeException("perspectived is gone");
         boolean isRunning = containerExists && containerManager.isRunning(DEFAULT_CONTAINER_NAME);
 
         if (!containerExists) {
@@ -54,50 +56,34 @@ public class LauncherActivity extends Activity {
     }
 
     private void showCreateContainerDialog() {
-        runOnUiThread(() -> {
+        runOnUiThread(() ->
             new MaterialAlertDialogBuilder(LauncherActivity.this)
                     .setTitle(R.string.no_container_title)
                     .setMessage(R.string.no_container_message)
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            createContainer();
-                            dialog.dismiss();
-                            startDisplayActivitiesOnAllDisplays();
-                        }
+                    .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                        createContainer();
+                        startDisplayActivitiesOnAllDisplays();
                     })
-                    .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                            finish();
-                        }
+                    .setNegativeButton(android.R.string.cancel, (dialog, which) -> {
+                        finish();
                     })
                     .setIcon(R.drawable.ic_help)
-                    .show();
-        });
+                    .show()
+        );
     }
 
     private void showStartContainerDialog() {
-        runOnUiThread(() -> {
-            new MaterialAlertDialogBuilder(LauncherActivity.this)
-                    .setTitle(R.string.not_running_title)
-                    .setMessage(R.string.not_running_message)
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            startContainer();
-                            dialog.dismiss();
-                            finish();
-                            startDisplayActivitiesOnAllDisplays();
-                        }
-                    })
-                    .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                            finish();
-                        }
-                    })
-                    .setIcon(R.drawable.ic_help)
-                    .show();
-        });
+        runOnUiThread(() -> new MaterialAlertDialogBuilder(LauncherActivity.this)
+                .setTitle(R.string.not_running_title)
+                .setMessage(R.string.not_running_message)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    startContainer();
+                    finish();
+                    startDisplayActivitiesOnAllDisplays();
+                })
+                .setNegativeButton(android.R.string.cancel, (dialog, which) -> finish())
+                .setIcon(R.drawable.ic_help)
+                .show());
     }
 
     private void createContainer() {

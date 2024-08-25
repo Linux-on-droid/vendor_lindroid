@@ -23,7 +23,7 @@ static sp<InputDevice> inputDevice = nullptr;
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeStartComposerService(
-    JNIEnv *env, jobject /* this */) {
+    JNIEnv *env, jclass /* clazz */) {
     ALOGI("Init native: Starting composer binder service...");
 
     composer = ndk::SharedRefBase::make<ComposerImpl>();
@@ -38,7 +38,7 @@ Java_org_lindroid_ui_NativeLib_nativeStartComposerService(
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeSurfaceCreated(
-    JNIEnv *env, jobject /* this */,
+    JNIEnv *env, jclass /* clazz */,
     jlong displayId, jobject surface) {
 
     sp<Surface> sf = android_view_Surface_getSurface(env, surface);
@@ -66,7 +66,7 @@ Java_org_lindroid_ui_NativeLib_nativeSurfaceCreated(
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeSurfaceChanged(
-    JNIEnv *env, jobject /* this */,
+    JNIEnv *env, jclass /* clazz */,
     jlong displayId, jobject surface, jint dpi, jfloat refresh) {
 
     sp<Surface> sf = android_view_Surface_getSurface(env, surface);
@@ -94,7 +94,7 @@ Java_org_lindroid_ui_NativeLib_nativeSurfaceChanged(
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeSurfaceDestroyed(
-    JNIEnv *env, jobject /* this */,
+    JNIEnv *env, jclass /* clazz */,
     jlong displayId, jobject surface) {
 
     sp<Surface> sf = android_view_Surface_getSurface(env, surface);
@@ -124,7 +124,7 @@ Java_org_lindroid_ui_NativeLib_nativeSurfaceDestroyed(
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeDisplayDestroyed(
-    JNIEnv *env, jobject /* this */,
+    JNIEnv *env, jclass /* clazz */,
     jlong displayId) {
 
     if (composer == nullptr) {
@@ -144,14 +144,14 @@ Java_org_lindroid_ui_NativeLib_nativeDisplayDestroyed(
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeInitInputDevice(
-    JNIEnv *env, jobject /* this */) {
+    JNIEnv *env, jclass /* clazz */) {
 
     inputDevice = new InputDevice();
 }
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeReconfigureInputDevice(
-    JNIEnv *env, jobject /* this */,
+    JNIEnv *env, jclass /* clazz */,
     jlong displayId, jint width, jint height) {
 
     if (inputDevice == nullptr) {
@@ -164,7 +164,7 @@ Java_org_lindroid_ui_NativeLib_nativeReconfigureInputDevice(
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeStopInputDevice(
-    JNIEnv *env, jobject /* this */,
+    JNIEnv *env, jclass /* clazz */,
     jlong displayId) {
 
     if (inputDevice == nullptr) {
@@ -177,7 +177,7 @@ Java_org_lindroid_ui_NativeLib_nativeStopInputDevice(
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeKeyEvent(
-    JNIEnv *env, jobject /* this */,
+    JNIEnv *env, jclass /* clazz */,
     jlong displayId, jint keyCode, jboolean isDown) {
 
     if (inputDevice == nullptr) {
@@ -190,7 +190,7 @@ Java_org_lindroid_ui_NativeLib_nativeKeyEvent(
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeTouchEvent(
-    JNIEnv *env, jobject /* this */,
+    JNIEnv *env, jclass /* clazz */,
     jlong displayId, jint pointerId, jint action, jint pressure, jint x, jint y) {
 
     if (inputDevice == nullptr) {
@@ -203,7 +203,7 @@ Java_org_lindroid_ui_NativeLib_nativeTouchEvent(
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativePointerMotionEvent(
-    JNIEnv *env, jobject /* this */,
+    JNIEnv *env, jclass /* clazz */,
     jlong displayId, jint x, jint y) {
 
     if (inputDevice == nullptr) {
@@ -216,7 +216,7 @@ Java_org_lindroid_ui_NativeLib_nativePointerMotionEvent(
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativePointerButtonEvent(
-    JNIEnv *env, jobject /* this */,
+    JNIEnv *env, jclass /* clazz */,
     jlong displayId, jint button, jint x, jint y, jboolean isDown) {
 
     if (inputDevice == nullptr) {
@@ -229,7 +229,7 @@ Java_org_lindroid_ui_NativeLib_nativePointerButtonEvent(
 
 extern "C" void
 Java_org_lindroid_ui_NativeLib_nativePointerScrollEvent(
-    JNIEnv *env, jobject /* this */,
+    JNIEnv *env, jclass /* clazz */,
     jlong displayId, jint value, jboolean isVertical) {
 
     if (inputDevice == nullptr) {

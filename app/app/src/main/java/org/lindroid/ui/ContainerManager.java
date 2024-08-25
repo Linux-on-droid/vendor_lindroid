@@ -13,12 +13,11 @@ import vendor.lindroid.perspective.IPerspective;
 
 public class ContainerManager {
     private static final String TAG = "ContainerManager";
-    private static final String PERSPECTIVE_SERVICE_NAME = "perspective";
-    private IPerspective mPerspective;
+    private final IPerspective mPerspective;
 
     public ContainerManager() {
         // Fetch the Perspective service
-        final IBinder binder = ServiceManager.getService(PERSPECTIVE_SERVICE_NAME);
+        final IBinder binder = ServiceManager.getService(Constants.PERSPECTIVE_SERVICE_NAME);
         if (binder == null) {
             Log.e(TAG, "Failed to get binder from ServiceManager");
             throw new RuntimeException("Failed to obtain Perspective service");
@@ -36,33 +35,53 @@ public class ContainerManager {
         }
     }
 
-    public void start(String containerName) {
+    public boolean start(String containerName) {
         try {
-            mPerspective.start(containerName);
-            Log.d(TAG, "Container " + containerName + " started successfully.");
+            if (mPerspective.start(containerName)) {
+                Log.d(TAG, "Container " + containerName + " started successfully.");
+                return true;
+            } else {
+                Log.e(TAG, "Container " + containerName + " failed to start.");
+                return false;
+            }
         } catch (RemoteException e) {
             Log.e(TAG, "RemoteException in start", e);
+            return false;
         }
     }
 
-    public void stop(String containerName) {
+    public boolean stop(String containerName) {
         try {
-            mPerspective.stop(containerName);
-            Log.d(TAG, "Container " + containerName + " stopped successfully.");
+            if (mPerspective.stop(containerName)) {
+                Log.d(TAG, "Container " + containerName + " stopped successfully.");
+                return true;
+            } else {
+                Log.e(TAG, "Container " + containerName + " failed to stop.");
+                return false;
+            }
         } catch (RemoteException e) {
             Log.e(TAG, "RemoteException in stop", e);
+            return false;
         }
     }
 
-    public void addContainer(String containerName, File rootfsFile) {
+    public boolean addContainer(String containerName, File rootfsFile) {
         try {
-            ParcelFileDescriptor pfd = ParcelFileDescriptor.open(rootfsFile, ParcelFileDescriptor.MODE_READ_ONLY);
-            mPerspective.addContainer(containerName, pfd);
-            Log.d(TAG, "Container " + containerName + " added successfully.");
+            ParcelFileDescriptor pfd = ParcelFileDescriptor.open(rootfsFile,
+                    ParcelFileDescriptor.MODE_READ_ONLY);
+            if (mPerspective.addContainer(containerName, pfd)) {
+                Log.d(TAG, "Container " + containerName + " added successfully.");
+                return true;
+            } else {
+                Log.e(TAG, "Container " + containerName + " failed to be added.");
+                return false;
+            }
         } catch (RemoteException e) {
             Log.e(TAG, "RemoteException in addContainer", e);
+            return false;
         } catch (FileNotFoundException e) {
             Log.e(TAG, "FileNotFoundException in addContainer", e);
+            return false;
         }
     }
 
@@ -75,13 +94,14 @@ public class ContainerManager {
         }
     }
 
-    public boolean containerExists(String containerName) {
+    public Boolean containerExists(String containerName) {
         try {
             List<String> containers = listContainers();
-            return containers != null && containers.contains(containerName);
+            if (containers == null) return null;
+            return containers.contains(containerName);
         } catch (Exception e) {
             Log.e(TAG, "Exception in containerExists", e);
-            return false;
+            return null;
         }
     }
 }

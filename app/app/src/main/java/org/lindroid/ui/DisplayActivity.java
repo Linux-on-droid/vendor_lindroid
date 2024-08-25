@@ -6,6 +6,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.InputDevice;
@@ -21,6 +22,8 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 
+import java.util.Objects;
+
 public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnTouchListener, View.OnHoverListener, View.OnGenericMotionListener {
     private static final String TAG = "Lindroid";
     private String mContainerName = "default";
@@ -30,7 +33,6 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     private int mPreviousHeight = 0;
     private static Handler mHandler;
     private Runnable mSurfaceRunnable;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,8 +49,10 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         Log.d(TAG, "Starting container: " + containerName + " on disp: " + displayID);
         start(displayID, containerName);
 
+
     }
 
+    @SuppressLint("ClickableViewAccessibility") // use screen reader inside linux
     public void start(long displayID, String containerName) {
         mDisplayID = displayID;
         mContainerName = containerName;
@@ -74,12 +78,9 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
                     .setMessage(R.string.stop_message)
                     .setPositiveButton(R.string.yes, (dialog, which) -> {
                         containerManager.stop(mContainerName);
-                        dialog.dismiss();
                         finish();
                     })
-                    .setNeutralButton(android.R.string.cancel, (dialog, which) -> {
-                        dialog.dismiss();
-                    })
+                    .setNeutralButton(android.R.string.cancel, (dialog, which) -> {})
                     .setNegativeButton(R.string.no, (dialog, which) -> {
                         super.onBackPressed();
                     })
@@ -145,6 +146,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         return true;
     }
 
+    @SuppressLint("ClickableViewAccessibility") // see above
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
         if(motionEvent.getSource() == InputDevice.SOURCE_MOUSE) {
@@ -194,21 +196,18 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
 
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
-        mHandler.removeCallbacksAndMessages(null);
-
-        mSurfaceRunnable = () -> {
-            applySurfaceChanges(holder, format, w, h);
-        };
-
+        mHandler.removeCallbacksAndMessages(mSurfaceRunnable);
+        mSurfaceRunnable = () -> applySurfaceChanges(holder, format, w, h);
         mHandler.postDelayed(mSurfaceRunnable, 200);
     }
 
     private void applySurfaceChanges(@NonNull SurfaceHolder holder, int format, int w, int h) {
+        // TODO format?
         Surface surface = holder.getSurface();
         if (surface != null) {
             float refresh = 60.0f;
             try {
-                refresh = getDisplay().getRefreshRate();
+                refresh = Objects.requireNonNull(getDisplay()).getRefreshRate();
             } catch (Exception e) {
                 Log.e(TAG, "Failed to get display refresh rate", e);
             }
