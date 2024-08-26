@@ -220,12 +220,13 @@ public class LauncherActivity extends Activity {
                 .show();
         new Thread(() -> {
             boolean ok = ContainerManager.addContainer(containerName, getContentResolver(), rootfs);
-            runOnUiThread(() -> getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
+            runOnUiThread(() -> {
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                inner.dismiss();
+            });
             if (ok) {
-                startOrError(containerName, () -> {
-                    updateAdapter();
-                    inner.dismiss();
-                });
+                updateAdapter();
+                startOrError(containerName, () -> startDisplayActivitiesOnAllDisplays(containerName));
             } else {
                 runOnUiThread(() -> new MaterialAlertDialogBuilder(LauncherActivity.this)
                         .setTitle(R.string.failed_to_create)
