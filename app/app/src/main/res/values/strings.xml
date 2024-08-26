@@ -24,7 +24,16 @@
     <string name="saf_pick_failed">No file was selected</string>
     <string name="add_container">Add container</string>
     <string name="dl_connecting">(Connecting…)</string>
-    <string name="downloading">Downloading...</string>
+    <string name="downloading">Downloading…</string>
     <string name="download_failed">Download failed</string>
-    <string name="progress">Downloaded %lu of %lu MB</string>
+    <string name="progress">Downloaded %1$d of %2$d MB</string>
+    <string name="cancel">Cancel</string>
+    <string name="duplicate_name">Duplicate name</string>
+    <string name="duplicate_name_msg">There already is a container with that name. Please choose another name.</string>
+    <string name="delete_container">Delete container</string>
+    <string name="delete_container_msg">Do you really want to delete the container %s?</string>
+    <string name="stop_container_msg">Do you really want to stop the container %s?</string>
+    <string name="stop_container">Stop container</string>
+    <string name="set_name">Container name</string>
+    <string name="deleting_container_title">Deleting container…</string>
 </resources>

@@ -100,6 +100,22 @@ public class ContainerManager {
         }
     }
 
+    public static boolean deleteContainer(String containerName) {
+        getPerspectiveIfNeeded();
+        try {
+            if (mPerspective.deleteContainer(containerName)) {
+                Log.d(TAG, "Container " + containerName + " deleted successfully.");
+                return true;
+            } else {
+                Log.e(TAG, "Container " + containerName + " failed to be deleted.");
+                return false;
+            }
+        } catch (RemoteException e) {
+            mPerspective = null;
+            throw new RuntimeException(e);
+        }
+    }
+
     public static List<String> listContainers() {
         getPerspectiveIfNeeded();
         try {

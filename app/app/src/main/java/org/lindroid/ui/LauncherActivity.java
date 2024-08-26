@@ -12,11 +12,14 @@ import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.AppCompatEditText;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -27,9 +30,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class LauncherActivity extends Activity {
@@ -66,31 +70,75 @@ public class LauncherActivity extends Activity {
                                 .inflate(android.R.layout.simple_list_item_1, parent, false));
                     }
                     return new ContainerViewHolder(LayoutInflater.from(LauncherActivity.this)
-                            .inflate(R.layout.container_entry, parent, false));
+                            .inflate(android.R.layout.simple_list_item_2, parent, false));
                 }
 
                 @Override
                 public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
                     if (holder instanceof ContainerViewHolder cvh) {
-                        cvh.mContainerName.setText(containers.get(position));
-                        cvh.setRunning(running.get(position));
+                        String name = containers.get(position);
+                        cvh.mContainerName.setText(name);
+                        boolean r = running.get(position);
+                        cvh.setRunning(r);
                         cvh.onClick = () -> {
-                            // TODO start/stop
+                            if (r)
+                                new MaterialAlertDialogBuilder(LauncherActivity.this)
+                                        .setTitle(R.string.stop_container)
+                                        .setMessage(getString(R.string.stop_container_msg, name))
+                                        .setPositiveButton(android.R.string.ok, (dialog, which) ->
+                                            new Thread(() -> {
+                                                if (ContainerManager.stop(name))
+                                                    updateAdapter();
+                                            }).start())
+                                        .setNegativeButton(R.string.no, (d, i) -> {})
+                                        .setCancelable(false)
+                                        .setIcon(R.drawable.ic_warning)
+                                        .show();
+                            else
+                                new Thread(() ->
+                                        startOrError(name, () -> startDisplayActivitiesOnAllDisplays(name))
+                                ).start();
+                        };
+                        cvh.onLongClick = () -> {
+                            if (r) return;
+                            new MaterialAlertDialogBuilder(LauncherActivity.this)
+                                    .setTitle(R.string.delete_container)
+                                    .setMessage(getString(R.string.delete_container_msg, name))
+                                    .setPositiveButton(R.string.yes, (dialog, which) -> {
+                                        View v = LayoutInflater.from(LauncherActivity.this).inflate(R.layout.progressdialog, null);
+                                        ((TextView) v.findViewById(R.id.prog_message)).setText(R.string.creating_container_message);
+                                        AlertDialog inner = new MaterialAlertDialogBuilder(LauncherActivity.this)
+                                                .setCancelable(false)
+                                                .setTitle(R.string.deleting_container_title)
+                                                .setView(v)
+                                                .show();
+                                        new Thread(() -> {
+                                            if (ContainerManager.deleteContainer(name))
+                                                updateAdapter();
+                                            inner.dismiss();
+                                        }).start();
+                                    })
+                                    .setNegativeButton(R.string.no, (d, i) -> {
+                                    })
+                                    .setCancelable(false)
+                                    .setIcon(R.drawable.ic_warning)
+                                    .show();
                         };
                     } else if (holder instanceof AddViewHolder avh) {
                         avh.onClick = () -> {
-                            // TODO ask for name
-                            String name = "default";
-                            if (!ContainerManager.listContainers().contains(name)) {
-                                mNewName = name;
-                                /*Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                                intent.setType("*\/*");
-                                startActivityForResult(intent, SAF_ROOTFS_REQUEST);*/
-                                createContainer(name, Uri.parse("https://github.com/Linux-on-droid/lindroid-rootfs/releases/download/nightly/lindroid-rootfs-arm64-plasma.zip.tar.gz"));
-                            } else {
-                                // TODO duplicate warning
-                            }
+                            // TODO show error when user enters junk that perspectived doesn't like
+                            final EditText editText = new AppCompatEditText(LauncherActivity.this);
+                            new MaterialAlertDialogBuilder(LauncherActivity.this)
+                                    .setTitle(R.string.set_name)
+                                    .setView(editText)
+                                    .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                                        String name = Objects.requireNonNull(editText.getText()).toString();
+                                        maybeCreateContainerWithName(name);
+                                    })
+                                    .setNegativeButton(android.R.string.cancel, (dialog, which) -> {})
+                                    .setIcon(R.drawable.ic_help)
+                                    .show();
+
                         };
                     }
                 }
@@ -131,55 +179,38 @@ public class LauncherActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+    private void maybeCreateContainerWithName(String name) {
+        new Thread(() -> {
+            if (!ContainerManager.listContainers().contains(name)) {
+                mNewName = name;
+                // TODO ask if intent or https
+                /*Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("*\/*");
+                startActivityForResult(intent, SAF_ROOTFS_REQUEST);*/
+                runOnUiThread(() -> createContainer(name,
+                        Uri.parse("https://github.com/Linux-on-droid/lindroid-rootfs/releases/download/nightly/lindroid-rootfs-arm64-plasma.zip.tar.gz")));
+            } else {
+                runOnUiThread(() ->
+                    new MaterialAlertDialogBuilder(LauncherActivity.this)
+                            .setTitle(R.string.duplicate_name)
+                            .setMessage(R.string.duplicate_name_msg)
+                            .setPositiveButton(android.R.string.ok, (d, i) -> {
+                            })
+                            .setCancelable(false)
+                            .setIcon(R.drawable.ic_warning)
+                            .show()
+                );
+            }
+        }).start();
+    }
+
     private void createContainer(String containerName, Uri rootfs) {
         if ("http".equals(rootfs.getScheme()) || "https".equals(rootfs.getScheme())) {
-            View v = LayoutInflater.from(this).inflate(R.layout.progressdialog, null);
-            final TextView tv = v.findViewById(R.id.prog_message);
-            tv.setText(R.string.dl_connecting);
-            AlertDialog inner = new MaterialAlertDialogBuilder(this)
-                    .setCancelable(false)
-                    .setTitle(R.string.downloading)
-                    .setView(v)
-                    .show();
-            new Thread(() -> {
-                File f = new File(getCacheDir(), String.valueOf(System.currentTimeMillis()));
-                try {
-                    HttpURLConnection conn = (HttpURLConnection) new URL(rootfs.toString()).openConnection();
-                    final long contentLength = conn.getContentLengthLong();
-                    long readBytes = 0;
-                    long lastReportedReadBytes = 0;
-                    final byte[] b = new byte[1024 * 1024];
-                    try (InputStream s = conn.getInputStream()) {
-                        try (OutputStream s2 = new FileOutputStream(f)) {
-                            int r;
-                            while ((r = s.read(b)) != -1) {
-                                s2.write(b, 0, r);
-                                if (r >= 0) readBytes += r;
-                                if (lastReportedReadBytes < readBytes - 1024 * 1024) {
-                                    lastReportedReadBytes = readBytes;
-                                    final long rb = readBytes;
-                                    runOnUiThread(() -> tv.setText(getString(R.string.progress,
-                                            rb / (1024 * 1024),
-                                            contentLength / (1024 * 1024))));
-                                }
-                            }
-                        }
-                    }
-                } catch (IOException e) {
-                    Log.e(TAG, Log.getStackTraceString(e));
-                    if (f.exists() && !f.delete())
-                        Log.e(TAG, "failed to delete temp file");
-                    runOnUiThread(() ->
-                        Toast.makeText(this, R.string.download_failed, Toast.LENGTH_LONG).show()
-                    );
-                    return;
-                } finally {
-                    runOnUiThread(inner::dismiss);
-                }
-                runOnUiThread(() -> createContainer(containerName, Uri.fromFile(f)));
-            });
+            downloadFile(containerName, rootfs);
             return;
         }
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         View v = LayoutInflater.from(this).inflate(R.layout.progressdialog, null);
         ((TextView) v.findViewById(R.id.prog_message)).setText(R.string.creating_container_message);
         AlertDialog inner = new MaterialAlertDialogBuilder(this)
@@ -188,7 +219,9 @@ public class LauncherActivity extends Activity {
                 .setView(v)
                 .show();
         new Thread(() -> {
-            if (ContainerManager.addContainer(containerName, getContentResolver(), rootfs)) {
+            boolean ok = ContainerManager.addContainer(containerName, getContentResolver(), rootfs);
+            runOnUiThread(() -> getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
+            if (ok) {
                 startOrError(containerName, () -> {
                     updateAdapter();
                     inner.dismiss();
@@ -205,9 +238,66 @@ public class LauncherActivity extends Activity {
         }).start();
     }
 
+    private void downloadFile(String containerName, Uri rootfs) {
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        View v = LayoutInflater.from(this).inflate(R.layout.progressdialog, null);
+        final TextView tv = v.findViewById(R.id.prog_message);
+        final AtomicBoolean cancel = new AtomicBoolean(false);
+        tv.setText(R.string.dl_connecting);
+        AlertDialog inner = new MaterialAlertDialogBuilder(this)
+                .setCancelable(false)
+                .setTitle(R.string.downloading)
+                .setNegativeButton(R.string.cancel, (d, i) -> cancel.set(true))
+                .setView(v)
+                .show();
+        new Thread(() -> {
+            File f = new File(getCacheDir(), String.valueOf(System.currentTimeMillis()));
+            try {
+                HttpURLConnection conn = (HttpURLConnection) new URL(rootfs.toString()).openConnection();
+                final long contentLength = conn.getContentLengthLong();
+                long readBytes = 0;
+                long lastReportedReadBytes = 0;
+                final byte[] b = new byte[16 * 1024 * 1024];
+                try (InputStream s = conn.getInputStream()) {
+                    try (OutputStream s2 = new FileOutputStream(f)) {
+                        int r;
+                        while ((r = s.read(b)) != -1 && !cancel.get()) {
+                            s2.write(b, 0, r);
+                            if (r >= 0) readBytes += r;
+                            if (lastReportedReadBytes < readBytes - 1024 * 1024) {
+                                lastReportedReadBytes = readBytes;
+                                final long rb = readBytes;
+                                runOnUiThread(() -> tv.setText(getString(R.string.progress,
+                                        rb / (1024 * 1024),
+                                        contentLength / (1024 * 1024))));
+                            }
+                        }
+                    }
+                }
+                if (cancel.get()) {
+                    if (f.exists() && !f.delete())
+                        Log.e(TAG, "failed to delete temp file");
+                    return;
+                }
+            } catch (IOException e) {
+                Log.e(TAG, Log.getStackTraceString(e));
+                if (f.exists() && !f.delete())
+                    Log.e(TAG, "failed to delete temp file");
+                runOnUiThread(() ->
+                        Toast.makeText(this, R.string.download_failed, Toast.LENGTH_LONG).show()
+                );
+                return;
+            } finally {
+                runOnUiThread(() -> getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
+                runOnUiThread(inner::dismiss);
+            }
+            runOnUiThread(() -> createContainer(containerName, Uri.fromFile(f)));
+        }).start();
+    }
+
     private void startOrError(String containerName, Runnable next) {
         new Thread(() -> {
-            if (!ContainerManager.start(containerName)) {
+            if (ContainerManager.start(containerName)) {
                 runOnUiThread(next);
             } else {
                 runOnUiThread(() -> new MaterialAlertDialogBuilder(LauncherActivity.this)
@@ -250,21 +340,40 @@ public class LauncherActivity extends Activity {
         }
     }
 
-    private static class ContainerViewHolder extends ViewHolder {
+    private static class ContainerViewHolder extends ViewHolder implements View.OnClickListener,
+            View.OnLongClickListener {
 
         public final TextView mContainerName;
         public final TextView mRunningIndicator;
-        public Runnable onClick; // TODO hook it up
+        public Runnable onClick;
+        public Runnable onLongClick;
 
         public ContainerViewHolder(View root) {
             super(root);
-            mContainerName = root.findViewById(R.id.containerName);
-            mRunningIndicator = root.findViewById(R.id.runningIndicator);
+            root.setOnClickListener(this);
+            root.setOnLongClickListener(this);
+            mContainerName = root.findViewById(android.R.id.text1);
+            mRunningIndicator = root.findViewById(android.R.id.text2);
         }
 
         public void setRunning(boolean running) {
             mRunningIndicator.setText(itemView.getContext().getString(running ? R.string.running :
                     R.string.not_running));
+        }
+
+        @Override
+        public void onClick(View v) {
+            if (onClick != null) {
+                onClick.run();
+            }
+        }
+
+        @Override
+        public boolean onLongClick(View v) {
+            if (onLongClick != null) {
+                onLongClick.run();
+            }
+            return true;
         }
     }
 
