@@ -10,13 +10,14 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 
 import androidx.annotation.Nullable;
 
 public class HardwareService extends Service {
 
     private static HardwareService instance = null;
-    private final Handler handler = new Handler(getMainLooper());
+    private final Handler handler = new Handler(Looper.getMainLooper());
     private AudioSocketServer audioSocketServer;
     private boolean started = false;
 
