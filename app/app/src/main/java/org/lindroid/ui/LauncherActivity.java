@@ -1,5 +1,7 @@
 package org.lindroid.ui;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+
 import android.app.Activity;
 import android.app.ActivityOptions;
 import android.content.Context;
@@ -329,6 +331,7 @@ public class LauncherActivity extends Activity {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
             ActivityOptions options = ActivityOptions.makeBasic();
             options.setLaunchDisplayId(displayId);
+            options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
 
             startActivity(intent, options.toBundle());
         }
