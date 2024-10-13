@@ -30,7 +30,9 @@ public class AudioSocketServer {
 
     private static final String TAG = "AudioSocketServer";
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService clientExecutor = Executors.newCachedThreadPool();
+    private final ExecutorService audioExecutor = Executors.newSingleThreadExecutor();
+
     private LocalServerSocket serverSocket;
     private boolean isRunning = false;
 
@@ -38,7 +40,7 @@ public class AudioSocketServer {
     private AudioRecord audioRecord;
 
     public AudioSocketServer() {
-        executor.execute(() -> {
+        clientExecutor.execute(() -> {
             try {
                 // Remove existing socket file if it exists
                 File socketFile = new File(Constants.SOCKET_PATH);
@@ -69,8 +71,9 @@ public class AudioSocketServer {
                     while (isRunning) {
                         LocalSocket clientSocket = serverSocket.accept();
                         Log.i(TAG, "Accepted client");
-                        handleClient(clientSocket);
-                        sendMicDataToSocket(clientSocket.getOutputStream());
+
+                        clientExecutor.execute(() -> handleClient(clientSocket));
+                        audioExecutor.execute(() -> sendMicDataToSocket(clientSocket));
                     }
                 } catch (ErrnoException e) {
                     Log.e(TAG, "Error setting up server socket", e);
@@ -81,33 +84,32 @@ public class AudioSocketServer {
         });
     }
 
-    private void sendMicDataToSocket(OutputStream outputStream) {
-        executor.execute(() -> {
-            byte[] buffer = new byte[10240];
 
-            try {
-                while (isRunning) {
-                    // Reset the buffer before reading
-                    Arrays.fill(buffer, (byte) 0);
+    private void sendMicDataToSocket(LocalSocket clientSocket) {
+        try (OutputStream outputStream = clientSocket.getOutputStream()) {
+            byte[] buffer = new byte[AudioRecord.getMinBufferSize(48000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)];
 
-                    // Add the prefix at the start of the buffer
-                    buffer[0] = AUDIO_INPUT_PREFIX;
+            while (isRunning) {
+                // Reset buffer before reading
+                Arrays.fill(buffer, (byte) 0);
 
-                    // Read data from the microphone
-                    int bytesRead = audioRecord.read(buffer, 1, buffer.length - 1);
+                // Add the prefix at the start of the buffer
+                buffer[0] = AUDIO_INPUT_PREFIX;
 
-                    // Only write if we have actually read data
-                    if (bytesRead > 0) {
-                        // Add 1 to bytesRead to include the prefix in the output
-                        outputStream.write(buffer, 0, bytesRead + 1);
-                    }
+                // Read data from the microphone
+                int bytesRead = audioRecord.read(buffer, 1, buffer.length - 1);
+
+                if (bytesRead > 0) {
+                    // Add 1 to bytesRead to include the prefix in the output
+                    outputStream.write(buffer, 0, bytesRead + 1);
+                } else if (bytesRead < 0) {
+                    Log.e(TAG, "Error reading microphone data: " + bytesRead);
                 }
-            } catch (IOException e) {
-                Log.e(TAG, "Error sending microphone data", e);
             }
-        });
+        } catch (IOException e) {
+            Log.e(TAG, "Error sending microphone data to client", e);
+        }
     }
-
 
     private void initializeAudioTrack() {
         // Assuming audio is PCM 16-bit, 48000Hz, stereo
@@ -116,6 +118,7 @@ public class AudioSocketServer {
         int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
 
         int minBufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat);
+
         audioTrack = new AudioTrack(
                 new AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_UNKNOWN)
@@ -154,45 +157,54 @@ public class AudioSocketServer {
     }
 
     private void handleClient(LocalSocket clientSocket) {
-        executor.execute(() -> {
-            try (InputStream inputStream = clientSocket.getInputStream()) {
-                byte[] buffer = new byte[10240];
-                int bytesRead;
+        try (InputStream inputStream = clientSocket.getInputStream()) {
+            byte[] buffer = new byte[10240];
+            int bytesRead;
 
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    if (bytesRead > 1) {
-                        byte prefix = buffer[0];
-                        if (prefix == AUDIO_OUTPUT_PREFIX[0]) {
-                            audioTrack.write(buffer, 1, bytesRead - 1);
-                            Log.i(TAG, "Received audio output data: " + (bytesRead - 1) + " bytes");
-                        }
-                    }
+            while (isRunning) {
+                bytesRead = inputStream.read(buffer);
+                Log.i(TAG, "Bytes read from client: " + bytesRead);
+
+                if (bytesRead > 0) {
+                    byte prefix = buffer[0];
+                    Log.i(TAG, "Received prefix: " + prefix);
+
+                    // Write data to AudioTrack (if appropriate)
+                    audioTrack.write(buffer, 1, bytesRead - 1);
+                    Log.i(TAG, "Audio data written to AudioTrack: " + (bytesRead - 1) + " bytes");
                 }
-            } catch (IOException e) {
-                Log.e(TAG, "Error handling client", e);
             }
-        });
+        } catch (IOException e) {
+            Log.e(TAG, "Error handling client", e);
+        }
     }
 
     public void stopServer() {
-        executor.shutdown();
         try {
-            if (!executor.awaitTermination(100, TimeUnit.MILLISECONDS))
-                executor.shutdownNow();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e); // who dares interrupt the main thread?
-        }
-        isRunning = false;
-        if (serverSocket != null) {
-            try {
-                serverSocket.close();
-            } catch (IOException e) {
-                Log.e(TAG, "Error closing server", e);
+            isRunning = false;
+            audioExecutor.shutdownNow();
+            clientExecutor.shutdownNow();
+
+            if (!audioExecutor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+                Log.w(TAG, "AudioExecutor shutdown timed out");
             }
-        }
-        if (audioTrack != null) {
-            audioTrack.stop();
-            audioTrack.release();
+            if (!clientExecutor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+                Log.w(TAG, "ClientExecutor shutdown timed out");
+            }
+
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
+            if (audioTrack != null) {
+                audioTrack.stop();
+                audioTrack.release();
+            }
+            if (audioRecord != null) {
+                audioRecord.stop();
+                audioRecord.release();
+            }
+        } catch (InterruptedException | IOException e) {
+            Log.e(TAG, "Error shutting down server", e);
         }
     }
 }
