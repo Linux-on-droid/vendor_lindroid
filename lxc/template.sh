@@ -418,14 +418,6 @@ lxc.mount.entry = /dev/pmsg0 dev/pmsg0 none bind,optional,rw,create=file
 lxc.mount.entry = /dev/ashmem dev/ashmem none bind,optional,rw,create=file
 lxc.mount.entry = /dev/ion dev/ion none bind,optional,create=file
 lxc.mount.entry = /dev/input dev/input none rbind,optional,rw,create=dir
-lxc.mount.entry = /dev/tty0 dev/tty0 none bind,optional,rw,create=file
-lxc.mount.entry = /dev/tty1 dev/tty1 none bind,optional,rw,create=file
-lxc.mount.entry = /dev/tty2 dev/tty2 none bind,optional,rw,create=file
-lxc.mount.entry = /dev/tty3 dev/tty3 none bind,optional,rw,create=file
-lxc.mount.entry = /dev/tty4 dev/tty4 none bind,optional,rw,create=file
-lxc.mount.entry = /dev/tty5 dev/tty5 none bind,optional,rw,create=file
-lxc.mount.entry = /dev/tty6 dev/tty6 none bind,optional,rw,create=file
-lxc.mount.entry = /dev/tty7 dev/tty7 none bind,optional,rw,create=file
 lxc.mount.entry = selinuxfs sys/fs/selinux selinuxfs optional 0 0
 lxc.mount.entry = /dev/binderfs dev/binderfs bind bind,create=dir,optional 0 0
 
