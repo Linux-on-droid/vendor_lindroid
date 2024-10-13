@@ -70,3 +70,5 @@ allow perspectived tmpfs:sock_file write;
 #allow perspectived systemd_udevd:netlink_kobject_uevent_socket { getopt getattr };
 
 allow perspectived unlabeled:file getattr;
+
+allow hwservicemanager perspectived:binder { transfer };

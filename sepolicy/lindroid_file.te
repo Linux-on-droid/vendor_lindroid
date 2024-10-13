@@ -5,3 +5,9 @@ allow system_app lindroid_file:dir { remove_name add_name };
 
 # Allow system_app to unlink the audio_socket
 allow system_app lindroid_file:sock_file unlink;
+
+# Allow system_app to create, bind, and manage the socket
+allow system_app lindroid_file:sock_file { create write read };
+
+# Allow system_app to access the directory containing the socket (if necessary)
+allow system_app lindroid_file:dir { write search open };
