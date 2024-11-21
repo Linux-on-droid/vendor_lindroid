@@ -31,8 +31,9 @@ public:
     // BnPerspective interface
     // ------------------------------------------------------------------------
 
-    virtual ndk::ScopedAStatus start(const std::string &id, bool *_aidl_return);
+    virtual ndk::ScopedAStatus start(const std::string &id, bool capture_output, bool *_aidl_return);
     virtual ndk::ScopedAStatus stop(const std::string &id, bool *_aidl_return);
+    virtual ndk::ScopedAStatus fetchLogs(const std::string &id, std::string *_aidl_return);
     virtual ndk::ScopedAStatus isRunning(const std::string &id, bool *_aidl_return);
     virtual ndk::ScopedAStatus listContainers(std::vector<std::string> *_aidl_return);
     virtual ndk::ScopedAStatus addContainer(const std::string &id, const ndk::ScopedFileDescriptor& fd, bool *_aidl_return);

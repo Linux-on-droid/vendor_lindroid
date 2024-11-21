@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 The Maru OS Project
- * Copyright 2024 Lindroid
+ * Copyright 2024-2025 Lindroid
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,10 @@
 #include <sys/wait.h>
 #include <log/log.h>
 
+#include <map>
+#include <string>
+#include <poll.h>
+
 #include "LXCContainerManager.h"
 
 #if !defined(LOG_NDEBUG) || (LOG_NDEBUG == 0)
@@ -36,6 +40,7 @@ namespace vendor {
 namespace lindroid {
 namespace perspective {
 
+std::map<std::string, int> containerLogFds;
 /*
  * We use a purely stateless approach to speaking with liblxc since container
  * state is determined at runtime via liblxc, similar to the lxc cmdline
@@ -70,7 +75,7 @@ static bool startContainerWithCheck(struct lxc_container *const c) {
 }
 
 
-static bool startContainer(const char* id) {
+static bool startContainer(const char* id, bool capture_output) {
     struct lxc_container *c = initContainer(id);
     bool ret = false;
 
@@ -88,6 +93,18 @@ static bool startContainer(const char* id) {
         ALOGD_IF(DEBUG, "desktop GO!");
         ALOGD_IF(DEBUG, "container state: %s", c->state(c));
         ALOGD_IF(DEBUG, "container PID: %d", c->init_pid(c));
+
+        int ttynum = 0;
+        int ptxfd = -1;
+
+        if (capture_output) {
+            int console_fd = c->console_getfd(c, &ttynum, &ptxfd);
+            if (console_fd < 0) {
+                ALOGD_IF(DEBUG, "Failed to allocate console for container.\n");
+                goto out;
+            }
+            containerLogFds[std::string(id)] = ptxfd;
+        }
         ret = true;
     } else {
         ALOGD("desktop already running, ignoring event...");
@@ -108,8 +125,46 @@ static bool stopContainer(const char* id) {
 
     bool ret = !c->is_running(c) || c->stop(c);
 
+    // Close and remove PTY
+    auto it = containerLogFds.find(std::string(id));
+    if (it != containerLogFds.end()) {
+        close(it->second);
+        containerLogFds.erase(it);
+    }
+
     lxc_container_put(c);
     return ret;
+}
+
+static std::string fetchContainerLogs(const char* id) {
+    auto it = containerLogFds.find(std::string(id));
+    if (it == containerLogFds.end()) {
+        ALOGE("No PTY available for container: %s", id);
+        return {};
+    }
+
+    int ptxfd = it->second;
+    char buffer[256];
+    std::string logs;
+
+    struct pollfd fds = { .fd = ptxfd, .events = POLLIN };
+
+    while (poll(&fds, 1, 100) > 0) {
+        if (fds.revents & POLLIN) {
+            ssize_t bytes = read(ptxfd, buffer, sizeof(buffer) - 1);
+            if (bytes > 0) {
+                buffer[bytes] = '\0';
+                logs += buffer;
+            } else if (bytes == 0) {
+                break;
+            } else {
+                ALOGE("Error reading from PTY master");
+                break;
+            }
+        }
+    }
+
+    return logs;
 }
 
 static bool containerIsRunning(const char* id) {
@@ -228,13 +283,18 @@ LXCContainerManager::LXCContainerManager() {
     }
 }
 
-ndk::ScopedAStatus LXCContainerManager::start(const std::string &id, bool *_aidl_return) {
-    *_aidl_return = startContainer(id.c_str());
+ndk::ScopedAStatus LXCContainerManager::start(const std::string &id, bool capture_output, bool *_aidl_return) {
+    *_aidl_return = startContainer(id.c_str(), capture_output);
     return ndk::ScopedAStatus::ok();
 }
 
 ndk::ScopedAStatus LXCContainerManager::stop(const std::string &id, bool *_aidl_return) {
     *_aidl_return = stopContainer(id.c_str());
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus LXCContainerManager::fetchLogs(const std::string &id, std::string *_aidl_return) {
+    *_aidl_return = fetchContainerLogs(id.c_str());
     return ndk::ScopedAStatus::ok();
 }
 
