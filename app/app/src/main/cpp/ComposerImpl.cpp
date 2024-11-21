@@ -91,6 +91,9 @@ ndk::ScopedAStatus ComposerImpl::setVsyncEnabled(int64_t in_displayId, int32_t i
 
 ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareBuffer &hardwareBuffer, const ::ndk::ScopedFileDescriptor &in_acquireFence, int32_t *_aidl_return) {
     auto display = mDisplays.find(in_displayId);
+    if(!m_ui_running)
+        m_ui_running = true;
+
     if (display != mDisplays.end()) {
         if (display->second->surface == nullptr) {
             //ALOGE("%s: Get Surface Failed!", __FUNCTION__);
@@ -131,6 +134,11 @@ ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareB
     }
     AHardwareBuffer_release(ahwb);
 
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus ComposerImpl::getUiRunning(bool *_aidl_return) {
+    *_aidl_return = m_ui_running;
     return ndk::ScopedAStatus::ok();
 }
 

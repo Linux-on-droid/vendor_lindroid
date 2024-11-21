@@ -77,6 +77,7 @@ public:
     virtual ndk::ScopedAStatus setPowerMode(int64_t in_displayId, int32_t in_mode) override;
     virtual ndk::ScopedAStatus setVsyncEnabled(int64_t in_displayId, int32_t in_enabled) override;
     virtual ndk::ScopedAStatus setBuffer(int64_t in_displayId, const HardwareBuffer &in_buffer, const ::ndk::ScopedFileDescriptor &in_fenceFd, int32_t *_aidl_return) override;
+    virtual ndk::ScopedAStatus getUiRunning(bool *_aidl_return) override;
 
     void onSurfaceCreated(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
     void onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow, int dpi, float refresh);
@@ -89,6 +90,8 @@ private:
     int32_t mSequenceId;
     std::shared_ptr<IComposerCallback> mCallbacks;
     std::unordered_map<int64_t, ComposerDisplay*> mDisplays;
+    
+    bool m_ui_running = false;
 };
 
 } // namespace composer

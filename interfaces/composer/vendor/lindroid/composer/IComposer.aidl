@@ -16,6 +16,7 @@ interface IComposer {
     @nullable ParcelFileDescriptor present(long displayId);
     void setPowerMode(long displayId, int mode);
     void setVsyncEnabled(long displayId, int enabled);
+    boolean getUiRunning();
     //void validate() 
 
     // Layer

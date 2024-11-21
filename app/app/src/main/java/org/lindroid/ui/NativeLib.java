@@ -16,6 +16,8 @@ public class NativeLib {
     public static native void nativeSurfaceDestroyed(long displayId, Surface surface);
 
     public static native void nativeDisplayDestroyed(long displayId);
+    
+    public static native boolean nativeGetUiRunning();
 
     public static native void nativeInitInputDevice();
 
