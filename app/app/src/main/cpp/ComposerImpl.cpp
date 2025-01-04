@@ -151,6 +151,7 @@ public:
             }
         }
     }
+    virtual void onBufferDetached(int slot) { }
     virtual bool needsReleaseNotify() { return true; }
     virtual void onBuffersDiscarded(const std::vector<sp<GraphicBuffer>>& buffers) { }
 private:
@@ -217,7 +218,7 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
         mDisplays[displayId] = targetDisplay;
     }
 
-    surface->connect(NATIVE_WINDOW_API_EGL, false, mDisplays[displayId]->listener);
+    surface->connect(NATIVE_WINDOW_API_EGL, mDisplays[displayId]->listener, false);
 
     if (!mDisplays[displayId]->plugged && mCallbacks != nullptr) {
         mDisplays[displayId]->plugged = true;
