@@ -11,9 +11,13 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Display
 import android.view.LayoutInflater
+import android.view.ViewGroup.MarginLayoutParams
 import android.view.WindowManager
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.CoroutineScope
@@ -50,6 +54,13 @@ class LauncherActivity : Activity() {
 				val runningContainer = ContainerManager.isAtLeastOneRunning()
 				withContext(Dispatchers.Main) {
 					setContentView(R.layout.launcher)
+					ViewCompat.setOnApplyWindowInsetsListener(requireViewById<RecyclerView>(R.id.recycler)) { v, windowInsets ->
+						val insets = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars())
+						v.updateLayoutParams<MarginLayoutParams> {
+							topMargin = insets.top
+						}
+						WindowInsetsCompat.CONSUMED
+					}
 					if (runningContainer != null) {
 						startDisplayActivitiesOnAllDisplays(runningContainer)
 					} else {
