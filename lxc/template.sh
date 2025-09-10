@@ -431,6 +431,7 @@ lxc.mount.entry = /data/lindroid/mnt lindroid bind bind,create=dir,optional 0 0
 lxc.mount.entry = /dev/dri dev/dri none bind,optional,rw,create=dir
 lxc.mount.entry = /dev/kgsl-3d0 dev/kgsl-3d0 none bind,optional,create=file
 lxc.mount.entry = /dev/mali0 dev/mali0 none bind,optional,create=file
+lxc.mount.entry = /dev/pvr_sync dev/pvr_sync none bind,optional,create=file
 # -- static Lindroid configuration ends here --
 EOF
 }
