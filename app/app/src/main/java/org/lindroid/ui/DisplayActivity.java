@@ -13,6 +13,7 @@ import static org.lindroid.ui.NativeLib.nativeSurfaceDestroyed;
 import static org.lindroid.ui.NativeLib.nativeTouchEvent;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -31,10 +32,13 @@ import android.view.WindowInsetsController;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.OnBackPressedCallback;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.Callback,
         View.OnTouchListener,
@@ -47,6 +51,8 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     private int mPreviousWidth = 0;
     private int mPreviousHeight = 0;
     private Runnable mSurfaceRunnable;
+    private OnBackPressedCallback backCallback;
+    private ExecutorService teardownExecutor = Executors.newSingleThreadExecutor();
 
     @Override
     @SuppressLint("ClickableViewAccessibility") // use screen reader inside linux
@@ -78,34 +84,49 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
 
         // Hide pointer icon
         mSurfaceView.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
-    }
 
-    @Override
-    public void onBackPressed() {
-        if (mDisplayID == 0 && mContainerName != null && ContainerManager.isRunning(mContainerName)) {
-            new MaterialAlertDialogBuilder(this)
-                    .setTitle(R.string.stop_title)
-                    .setMessage(R.string.stop_message)
-                    .setPositiveButton(R.string.yes, (dialog, which) -> {
-                        HardwareService hs = HardwareService.getInstance();
-                        if (hs != null) {
-                            hs.stopSelf();
-                        }
-                        ContainerManager.stop(mContainerName);
-                        finish();
-                    })
-                    .setNeutralButton(android.R.string.cancel, (dialog, which) -> {})
-                    .setNegativeButton(R.string.no, (dialog, which) -> {
-                        super.onBackPressed();
-                    })
-                    .show();
-        } else {
-            finish();
-        }
+        // Back pressed handling for stopping container
+        backCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (mDisplayID == 0 && mContainerName != null && ContainerManager.isRunning(mContainerName)) {
+                    MaterialAlertDialogBuilder builder =
+                            new MaterialAlertDialogBuilder(DisplayActivity.this);
+                    builder.setTitle(R.string.stop_title);
+                    builder.setMessage(R.string.stop_message);
+                    builder.setPositiveButton(R.string.yes, (dialog, which) -> {
+                        teardownExecutor.execute(() -> {
+                            try {
+                                DisplayActivity.this.stopService(new Intent(
+                                        DisplayActivity.this, HardwareService.class));
+                                ContainerManager.stop(mContainerName);
+                            } catch (Exception e) {
+                                Log.e(TAG, "Failure stopping container", e);
+                            } finally {
+                                runOnUiThread(DisplayActivity.this::finish);
+                            }
+                        });
+                    });
+                    builder.setNegativeButton(R.string.no, (dialog, which) -> {
+                        backCallback.setEnabled(false);
+                        getOnBackPressedDispatcher().onBackPressed();
+                        backCallback.setEnabled(true);
+                    });
+                    builder.setNeutralButton(android.R.string.cancel, (dialog, which) -> {});
+                    builder.show();
+                } else {
+                    backCallback.setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                    backCallback.setEnabled(true);
+                }
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, backCallback);
     }
 
     @Override
     protected void onDestroy() {
+        if (teardownExecutor != null) teardownExecutor.shutdownNow();
         super.onDestroy();
         // Destroyed in HardwareService when user decides to stop container
         if (mDisplayID != 0) {
