@@ -5,6 +5,8 @@ on init
     mount cgroup none /sys/fs/cgroup/freezer freezer
     mkdir /sys/fs/cgroup/systemd 0750 root system
     mount cgroup none /sys/fs/cgroup/systemd none,name=systemd
+    # Ensure /dev/dri directory exists
+    mkdir /dev/dri 0755 root root
 
 on post-fs-data
     mkdir /data/lindroid 0770 system system
