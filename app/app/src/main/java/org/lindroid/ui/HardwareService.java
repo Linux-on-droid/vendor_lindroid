@@ -89,5 +89,7 @@ public class HardwareService extends Service {
         // these don't explode if display 0 doesn't exist
         nativeDisplayDestroyed(0);
         nativeStopInputDevice(0);
+        started = false;
+        super.onDestroy();
     }
 }
