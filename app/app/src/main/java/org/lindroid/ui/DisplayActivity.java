@@ -350,7 +350,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
             } catch (Exception e) {
                 Log.e(TAG, "Failed to get display refresh rate", e);
             }
-            nativeSurfaceChanged(mDisplayID, surface, getResources().getConfiguration().densityDpi, refresh - 6);
+            nativeSurfaceChanged(mDisplayID, surface, getResources().getConfiguration().densityDpi, refresh);
             if (mPreviousWidth != w || mPreviousHeight != h) {
                 nativeReconfigureInputDevice(mDisplayID, w, h);
                 mPreviousWidth = w;
