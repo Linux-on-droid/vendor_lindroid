@@ -335,7 +335,8 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
 
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
-        mHandler.removeCallbacksAndMessages(mSurfaceRunnable);
+        if (mSurfaceRunnable!=null)
+            mHandler.removeCallbacksAndMessages(mSurfaceRunnable);
         mSurfaceRunnable = () -> applySurfaceChanges(holder, format, w, h);
         mHandler.postDelayed(mSurfaceRunnable, 200);
     }
