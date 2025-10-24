@@ -197,7 +197,12 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
     displayConfig.height = ANativeWindow_getHeight(nativeWindow);
     displayConfig.dpi.x = dpi;
     displayConfig.dpi.y = dpi;
-    displayConfig.vsyncPeriod = 10E8 / refresh;
+    double rate = static_cast<double>(refresh);
+    if (!(rate > 1.0 && rate < 1000.0)) {
+        rate = 60.0; //60hz fallback
+    }
+    const int64_t periodNs = static_cast<int64_t>(llround(1000000000.0 / rate));
+    displayConfig.vsyncPeriod = periodNs;
 
     bool needRefresh = false;
     auto display = mDisplays.find(displayId);
