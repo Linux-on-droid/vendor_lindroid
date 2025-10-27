@@ -24,6 +24,7 @@ Patch your device kernel to enable these defconfigs:
     CONFIG_NET_NS=y
     CONFIG_CGROUP_DEVICE=y
     CONFIG_CGROUP_FREEZER=y
+    CONFIG_DRM_LINDROID_EVDI=y
 
 Clone vendor_lindroid, vendor_extra, libhybris and external_lxc repositories into an LMODroid (or LineageOS, if you pick [this patch](https://gerrit.libremobileos.com/c/LMODroid/platform_frameworks_native/+/12936)) tree and build it! You then will have a Lindroid app you can use in your app drawer.
 
