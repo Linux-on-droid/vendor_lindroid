@@ -1,12 +1,19 @@
 #pragma once
 
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <unordered_map>
 
 #include <gui/Surface.h>
+#include <gui/DisplayEventReceiver.h>
 #include <ui/Fence.h>
 #include <ui/GraphicBuffer.h>
+#include <utils/Errors.h>
 #include <utils/Mutex.h>
 
 #include <aidl/android/hardware/graphics/common/HardwareBuffer.h>
@@ -29,31 +36,22 @@ namespace vendor {
 namespace lindroid {
 namespace composer {
 
-typedef std::function<void(int64_t)> vsync_callback_t;
+typedef std::function<void(int64_t /*timestampNs*/, uint32_t /*count32*/)> vsync_callback_t;
 
 class VsyncThread {
 public:
-    static int64_t now();
-    static bool sleepUntil(int64_t t);
-
     void start(int64_t first, int64_t period);
     void stop();
     void setCallback(const vsync_callback_t &callback);
-    void enableCallback(bool enable);
 
 private:
     void vsyncLoop();
-    bool waitUntilNextVsync();
-
     std::thread mThread;
-    int64_t mNextVsync{0};
-    int64_t mPeriod{0};
-
     std::mutex mMutex;
-    std::condition_variable mCondition;
     bool mStarted{false};
     vsync_callback_t mCallback;
-    bool mCallbackEnabled{false};
+    ::android::DisplayEventReceiver mReceiver;
+    bool mReceiverReady{false};
 };
 
 struct ComposerDisplay {

@@ -4,7 +4,10 @@
 #include <android/hardware_buffer.h>
 #include <android/native_window.h>
 #include <private/android/AHardwareBufferHelpers.h>
+#include <errno.h>
+#include <poll.h>
 #include <sys/prctl.h>
+#include <type_traits>
 #include <utils/Log.h>
 #include <vndk/hardware_buffer.h>
 #include <vndk/window.h>
@@ -12,6 +15,45 @@
 #include "ComposerImpl.h"
 
 using namespace android;
+
+// Multi-android version vsync check support for DisplayEventReceiver
+namespace {
+
+static inline constexpr uint32_t fourcc_be(char c1, char c2, char c3, char c4) {
+    return (uint32_t(uint8_t(c1)) << 24) |
+           (uint32_t(uint8_t(c2)) << 16) |
+           (uint32_t(uint8_t(c3)) <<  8) |
+           (uint32_t(uint8_t(c4))      );
+}
+
+static inline constexpr uint32_t fourcc_le(char c1, char c2, char c3, char c4) {
+    return (uint32_t(uint8_t(c1))      ) |
+           (uint32_t(uint8_t(c2)) <<  8) |
+           (uint32_t(uint8_t(c3)) << 16) |
+           (uint32_t(uint8_t(c4)) << 24);
+}
+
+template <class T>
+static inline constexpr uint32_t to_u32_event_type(T t) {
+    if constexpr (std::is_enum_v<T>) {
+        return static_cast<uint32_t>(static_cast<std::underlying_type_t<T>>(t));
+    } else {
+        return static_cast<uint32_t>(t);
+    }
+}
+
+static inline constexpr bool is_vsync_event_type_u32(uint32_t v) {
+    return v == fourcc_be('v','s','y','n') ||
+           v == fourcc_le('v','s','y','n') ||
+           v == static_cast<uint32_t>('vsyn');
+}
+
+template <class T>
+static inline constexpr bool is_vsync_event_type(T t) {
+    return is_vsync_event_type_u32(to_u32_event_type(t));
+}
+
+} // namespace
 
 namespace aidl {
 namespace vendor {
@@ -67,11 +109,18 @@ ndk::ScopedAStatus ComposerImpl::getReleaseFence(int64_t in_displayId, ndk::Scop
 }
 
 ndk::ScopedAStatus ComposerImpl::present(int64_t in_displayId, ndk::ScopedFileDescriptor *_aidl_return) {
-    //ALOGI("%s: Display: %" PRId64 "", __FUNCTION__, in_displayId);
-    sp<Fence> fence = Fence::NO_FENCE;
-    if (fence->isValid()) {
-        *_aidl_return = ndk::ScopedFileDescriptor(fence->dup());
+    ComposerDisplay* d = nullptr;
+    {
+        Mutex::Autolock _l(mLock);
+        auto it = mDisplays.find(in_displayId);
+        if (it == mDisplays.end() || it->second == nullptr) {
+            return ndk::ScopedAStatus::ok();
+        }
+        d = it->second;
     }
+
+    // No fence
+    *_aidl_return = ndk::ScopedFileDescriptor();
     return ndk::ScopedAStatus::ok();
 }
 
@@ -82,10 +131,6 @@ ndk::ScopedAStatus ComposerImpl::setPowerMode(int64_t in_displayId, int32_t in_m
 
 ndk::ScopedAStatus ComposerImpl::setVsyncEnabled(int64_t in_displayId, int32_t in_enabled) {
     ALOGI("%s: Display: %" PRId64 " enabled: %d", __FUNCTION__, in_displayId, in_enabled);
-    auto display = mDisplays.find(in_displayId);
-    if (display != mDisplays.end()) {
-        display->second->mVsyncThread.enableCallback(in_enabled == 1);
-    }
     return ndk::ScopedAStatus::ok();
 }
 
@@ -222,11 +267,11 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
         targetDisplay->displayConfig = displayConfig;
         targetDisplay->plugged = false;
         targetDisplay->listener = new DisplayListener(targetDisplay);
-        targetDisplay->mVsyncThread.setCallback([&](int64_t timestamp) {
+        targetDisplay->mVsyncThread.setCallback([this, displayId, targetDisplay](int64_t timestamp, uint32_t count32) {
             if (mCallbacks == nullptr)
                 return;
             mCallbacks->onVsyncReceived(mSequenceId, displayId, timestamp);
-        });
+       });
         targetDisplay->mVsyncThread.start(0, displayConfig.vsyncPeriod);
         mDisplays[displayId] = targetDisplay;
     }
@@ -263,35 +308,18 @@ void ComposerImpl::onDisplayDestroyed(int64_t displayId) {
     mDisplays.erase(displayId);
 }
 
-int64_t VsyncThread::now() {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-
-    return int64_t(ts.tv_sec) * 1'000'000'000 + ts.tv_nsec;
-}
-
-bool VsyncThread::sleepUntil(int64_t t) {
-    struct timespec ts;
-    ts.tv_sec = t / 1'000'000'000;
-    ts.tv_nsec = t % 1'000'000'000;
-
-    while (true) {
-        int error = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, nullptr);
-        if (error) {
-            if (error == EINTR) {
-                continue;
-            }
-            return false;
-        } else {
-            return true;
-        }
-    }
-}
-
 void VsyncThread::start(int64_t firstVsync, int64_t period) {
-    mNextVsync = firstVsync;
-    mPeriod = period;
+    (void)firstVsync;
+    (void)period;
+
+    const status_t st = mReceiver.initCheck();
+    LOG_ALWAYS_FATAL_IF(st != ::android::OK,
+                        "DisplayEventReceiver initCheck failed (%d); no fallback permitted", st);
+    mReceiverReady = true;
     mStarted = true;
+
+    (void)mReceiver.setVsyncRate(0u);
+    (void)mReceiver.requestNextVsync();
     mThread = std::thread(&VsyncThread::vsyncLoop, this);
 }
 
@@ -300,8 +328,8 @@ void VsyncThread::stop() {
         std::lock_guard<std::mutex> lock(mMutex);
         mStarted = false;
     }
-    mCondition.notify_all();
-    mThread.join();
+    if (mThread.joinable())
+        mThread.join();
 }
 
 void VsyncThread::setCallback(const vsync_callback_t &callback) {
@@ -309,51 +337,59 @@ void VsyncThread::setCallback(const vsync_callback_t &callback) {
     mCallback = callback;
 }
 
-void VsyncThread::enableCallback(bool enable) {
-    if (mCallbackEnabled == enable)
-        return;
-    {
-        std::lock_guard<std::mutex> lock(mMutex);
-        mCallbackEnabled = enable;
-    }
-    mCondition.notify_all();
-}
-
 void VsyncThread::vsyncLoop() {
     prctl(PR_SET_NAME, "VsyncThread", 0, 0, 0);
 
     std::unique_lock<std::mutex> lock(mMutex);
-    if (!mStarted) {
-        return;
-    }
+    if (!mStarted) return;
+    LOG_ALWAYS_FATAL_IF(!mReceiverReady, "VsyncThread started without DisplayEventReceiver");
+
+    (void)mReceiver.setVsyncRate(0u);
+    (void)mReceiver.requestNextVsync();
 
     while (true) {
-        if (!mCallbackEnabled) {
-            mCondition.wait(lock, [this] { return mCallbackEnabled || !mStarted; });
-            if (!mStarted) {
-                break;
-            }
-        }
-
+        auto cb = mCallback;
         lock.unlock();
 
-        // adjust mNextVsync if necessary
-        int64_t t = now();
-        if (mNextVsync < t) {
-            int64_t n = (t - mNextVsync + mPeriod - 1) / mPeriod;
-            mNextVsync += mPeriod * n;
+        const int fd = mReceiver.getFd();
+        LOG_ALWAYS_FATAL_IF(fd < 0, "DisplayEventReceiver fd invalid: %d", fd);
+
+        struct pollfd pfd;
+        pfd.fd = fd;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+
+        const int pr = ::poll(&pfd, 1, 50 /*ms*/);
+        if (pr < 0 && errno == EINTR) {
+            lock.lock();
+            if (!mStarted) break;
+            continue;
         }
-        bool fire = sleepUntil(mNextVsync);
+        if (pr > 0 && (pfd.revents & POLLIN)) {
+            ::android::DisplayEventReceiver::Event evs[16];
+            int64_t lastTs = 0;
+            uint32_t lastCount32 = 0;
+
+            for (;;) {
+                const ssize_t n = mReceiver.getEvents(evs, std::size(evs));
+                if (n <= 0) break;
+                for (ssize_t i = 0; i < n; i++) {
+                    if (is_vsync_event_type(evs[i].header.type)) {
+                        lastTs = static_cast<int64_t>(evs[i].header.timestamp);
+                        lastCount32 = evs[i].vsync.count;
+                    }
+                }
+            }
+
+            if (cb && lastTs != 0) {
+                cb(lastTs, lastCount32);
+            }
+        }
+
+        (void)mReceiver.requestNextVsync();
 
         lock.lock();
-
-        if (fire) {
-            ALOGV("VsyncThread(%" PRId64 ")", mNextVsync);
-            if (mCallback) {
-                mCallback(mNextVsync);
-            }
-            mNextVsync += mPeriod;
-        }
+        if (!mStarted) break;
     }
 }
 
