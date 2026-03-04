@@ -1,5 +1,7 @@
 #define ALOG_TAG "LindroidComposer"
 
+#include <android/surface_control.h>
+#include <unistd.h>
 #include <aidlcommonsupport/NativeHandle.h>
 #include <android/hardware_buffer.h>
 #include <android/native_window.h>
@@ -119,8 +121,13 @@ ndk::ScopedAStatus ComposerImpl::present(int64_t in_displayId, ndk::ScopedFileDe
         d = it->second;
     }
 
-    // No fence
-    *_aidl_return = ndk::ScopedFileDescriptor();
+    int out = -1;
+    std::lock_guard<std::mutex> lk(d->fenceMutex);
+    if (d->lastPresentFenceFd >= 0)
+        out = ::dup(d->lastPresentFenceFd);
+
+    *_aidl_return = (out >= 0) ? ndk::ScopedFileDescriptor(out) : ndk::ScopedFileDescriptor();
+
     return ndk::ScopedAStatus::ok();
 }
 
@@ -164,19 +171,31 @@ ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareB
         ALOGE("%s: createFromHandle failed!", __FUNCTION__);
         *_aidl_return = static_cast<int32_t>(status);
     }
-    ANativeWindowBuffer *buffer = AHardwareBuffer_to_ANativeWindowBuffer(ahwb);
+
     if (mDisplays[in_displayId]->surface == nullptr) {
         // ALOGE("%s: Get Surface Failed!", __FUNCTION__);
         return ndk::ScopedAStatus::ok();
     }
-    *_aidl_return = mDisplays[in_displayId]->surface->attachBuffer(buffer);
-    if (*_aidl_return == NO_ERROR) {
-        if (mDisplays[in_displayId]->nativeWindow == nullptr) {
-            // ALOGE("%s: Get NativeWindow Failed!", __FUNCTION__);
-            return ndk::ScopedAStatus::ok();
-        }
-        *_aidl_return = ANativeWindow_queueBuffer(mDisplays[in_displayId]->nativeWindow, buffer, -1);
-    }
+
+    ASurfaceTransaction* transaction = ASurfaceTransaction_create();
+
+    ASurfaceTransaction_setVisibility(transaction, mDisplays[in_displayId]->surfaceControl, ASURFACE_TRANSACTION_VISIBILITY_SHOW);
+
+    int acquireFd = in_acquireFence.get();
+    ASurfaceTransaction_setBuffer(transaction, mDisplays[in_displayId]->surfaceControl, ahwb, acquireFd);
+
+    ASurfaceTransaction_setOnComplete(transaction, mDisplays[in_displayId], [](void* ctx, ASurfaceTransactionStats* stats) {
+        auto* disp = static_cast<ComposerDisplay*>(ctx);
+
+        int pf = ASurfaceTransactionStats_getPresentFenceFd(stats);
+        std::lock_guard<std::mutex> lk(disp->fenceMutex);
+        if (disp->lastPresentFenceFd >= 0) close(disp->lastPresentFenceFd);
+        disp->lastPresentFenceFd = (pf >= 0) ? dup(pf) : -1;
+    });
+
+    ASurfaceTransaction_apply(transaction);
+    ASurfaceTransaction_delete(transaction);
+
     AHardwareBuffer_release(ahwb);
 
     return ndk::ScopedAStatus::ok();
@@ -233,7 +252,7 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
         ALOGE("%s: Get Surface ERROR!", __FUNCTION__);
         return;
     }
-    ALOGI("%s: Display: %" PRId64 ", Width: %d, Height: %d, dpi: %d, refreshRate: %f", __FUNCTION__, 
+    ALOGI("%s: Display: %" PRId64 ", Width: %d, Height: %d, dpi: %d, refreshRate: %f", __FUNCTION__,
         displayId, ANativeWindow_getWidth(nativeWindow), ANativeWindow_getHeight(nativeWindow), dpi, refresh);
     DisplayConfiguration displayConfig;
     displayConfig.configId = 0;
@@ -285,6 +304,9 @@ void ComposerImpl::onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANat
     if (needRefresh && mCallbacks != nullptr) {
         mCallbacks->onRefreshReceived(mSequenceId, displayId);
     }
+    if (!mDisplays[displayId]->surfaceControl) {
+        mDisplays[displayId]->surfaceControl = ASurfaceControl_createFromWindow(nativeWindow, "LindroidComposer");
+    }
 }
 
 void ComposerImpl::onSurfaceDestroyed(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow) {
@@ -304,6 +326,12 @@ void ComposerImpl::onDisplayDestroyed(int64_t displayId) {
         display->second->mVsyncThread.stop();
         if (mCallbacks != nullptr)
             mCallbacks->onHotplugReceived(mSequenceId, displayId, false, displayId == 0);
+        if (display->second->surfaceControl) {
+            ASurfaceControl_release(display->second->surfaceControl);
+        }
+        std::lock_guard<std::mutex> lk(display->second->fenceMutex);
+        if (display->second->lastPresentFenceFd >= 0)
+            ::close(display->second->lastPresentFenceFd);
     }
     mDisplays.erase(displayId);
 }

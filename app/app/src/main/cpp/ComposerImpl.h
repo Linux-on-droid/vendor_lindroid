@@ -9,6 +9,7 @@
 #include <thread>
 #include <unordered_map>
 
+#include <android/surface_control.h>
 #include <gui/Surface.h>
 #include <gui/DisplayEventReceiver.h>
 #include <ui/Fence.h>
@@ -61,6 +62,9 @@ struct ComposerDisplay {
     bool plugged;
     sp<SurfaceListener> listener;
     VsyncThread mVsyncThread;
+    ASurfaceControl* surfaceControl;
+    std::mutex fenceMutex;
+    int lastPresentFenceFd = -1;
 };
 
 class ComposerImpl : public BnComposer {
@@ -88,7 +92,7 @@ private:
     int32_t mSequenceId;
     std::shared_ptr<IComposerCallback> mCallbacks;
     std::unordered_map<int64_t, ComposerDisplay*> mDisplays;
-    
+
     bool m_ui_running = false;
 };
 
