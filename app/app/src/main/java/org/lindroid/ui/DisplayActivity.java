@@ -28,8 +28,8 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.PointerIcon;
 import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.graphics.SurfaceTexture;
+import android.view.TextureView;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
@@ -48,7 +48,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.Callback,
+public class DisplayActivity extends AppCompatActivity implements TextureView.SurfaceTextureListener,
         View.OnTouchListener,
         View.OnHoverListener,
         View.OnGenericMotionListener {
@@ -61,7 +61,8 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     private Runnable mSurfaceRunnable;
     private OnBackPressedCallback backCallback;
     private ExecutorService teardownExecutor = Executors.newSingleThreadExecutor();
-    SurfaceView mSurfaceView;
+    private TextureView mTextureView;
+    private Surface mCurrentSurface;
 
     private final List<String> displayedLogs = new ArrayList<>();
     private int scrollOffset = 0;
@@ -77,8 +78,8 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         if (HardwareService.getInstance() == null) {
             startForegroundService(new Intent(this, HardwareService.class));
         }
-        mSurfaceView = new SurfaceView(this);
-        setContentView(mSurfaceView);
+        mTextureView = new TextureView(this);
+        setContentView(mTextureView);
         final WindowInsetsController controller = getWindow().getInsetsController();
         if (controller != null) {
             controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
@@ -90,14 +91,13 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
 
         if (mHandler == null)
             mHandler = new Handler(Looper.getMainLooper());
-        SurfaceHolder sh = mSurfaceView.getHolder();
-        mSurfaceView.setOnTouchListener(this);
-        mSurfaceView.setOnHoverListener(this);
-        mSurfaceView.setOnGenericMotionListener(this);
-        sh.addCallback(this);
+        mTextureView.setOnTouchListener(this);
+        mTextureView.setOnHoverListener(this);
+        mTextureView.setOnGenericMotionListener(this);
+        mTextureView.setSurfaceTextureListener(this);
 
         // Hide pointer icon
-        mSurfaceView.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
+        mTextureView.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
 
         // Register for log updates
         ContainerManager.addLogUpdateListener(mContainerName, this::onLogUpdated);
@@ -145,7 +145,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     private void drawLogs() {
         if(nativeGetUiRunning())
             return;
-        Canvas canvas = mSurfaceView.getHolder().lockCanvas();
+        Canvas canvas = mTextureView.lockCanvas();
         if (canvas != null) {
             try {
                 // clear the canvas
@@ -169,7 +169,7 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
                     y += lineHeight;
                 }
             } finally {
-                mSurfaceView.getHolder().unlockCanvasAndPost(canvas);
+                mTextureView.unlockCanvasAndPost(canvas);
             }
         }
     }
@@ -210,6 +210,10 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
         // Stop log fetching and unregister listener
         ContainerManager.stopFetchingLogs(mContainerName);
         ContainerManager.removeLogUpdateListener(mContainerName, this::onLogUpdated);
+        if (mCurrentSurface != null) {
+            mCurrentSurface.release();
+            mCurrentSurface = null;
+        }
     }
 
     @Override
@@ -326,25 +330,42 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
     }
 
     @Override
-    public void surfaceCreated(@NonNull SurfaceHolder holder) {
-        Surface surface = holder.getSurface();
-        if (surface != null) {
-            nativeSurfaceCreated(mDisplayID, surface);
+    public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
+        mCurrentSurface = new Surface(surfaceTexture);
+        nativeSurfaceCreated(mDisplayID, mCurrentSurface);
+        triggerSurfaceChanged(mCurrentSurface, width, height);
+    }
+
+    @Override
+    public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
+        if (mCurrentSurface != null) {
+            triggerSurfaceChanged(mCurrentSurface, width, height);
         }
     }
 
     @Override
-    public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
-        if (mSurfaceRunnable!=null)
+    public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surfaceTexture) {
+        if (mCurrentSurface != null) {
+            nativeSurfaceDestroyed(mDisplayID, mCurrentSurface);
+            mCurrentSurface.release();
+            mCurrentSurface = null;
+        }
+        return true;
+    }
+
+    @Override
+    public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surfaceTexture) {
+    }
+
+    private void triggerSurfaceChanged(Surface surface, int w, int h) {
+        if (mSurfaceRunnable != null)
             mHandler.removeCallbacksAndMessages(mSurfaceRunnable);
-        mSurfaceRunnable = () -> applySurfaceChanges(holder, format, w, h);
+        mSurfaceRunnable = () -> applySurfaceChanges(surface, w, h);
         mHandler.postDelayed(mSurfaceRunnable, 200);
     }
 
-    private void applySurfaceChanges(@NonNull SurfaceHolder holder, int format, int w, int h) {
-        // TODO format?
-        Surface surface = holder.getSurface();
-        if (surface != null) {
+    private void applySurfaceChanges(Surface surface, int w, int h) {
+        if (surface != null && surface.isValid()) {
             float refresh = 60.0f;
             try {
                 refresh = Objects.requireNonNull(getDisplay()).getRefreshRate();
@@ -357,14 +378,6 @@ public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.
                 mPreviousWidth = w;
                 mPreviousHeight = h;
             }
-        }
-    }
-
-    @Override
-    public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-        Surface surface = holder.getSurface();
-        if (surface != null) {
-            nativeSurfaceDestroyed(mDisplayID, surface);
         }
     }
 }
