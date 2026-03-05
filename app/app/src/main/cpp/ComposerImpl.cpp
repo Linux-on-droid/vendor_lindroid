@@ -135,6 +135,7 @@ ndk::ScopedAStatus ComposerImpl::setVsyncEnabled(int64_t in_displayId, int32_t i
 }
 
 ndk::ScopedAStatus ComposerImpl::setBuffer(int64_t in_displayId, const HardwareBuffer &hardwareBuffer, const ::ndk::ScopedFileDescriptor &in_acquireFence, int32_t *_aidl_return) {
+    Mutex::Autolock _l(mLock);
     auto display = mDisplays.find(in_displayId);
     if(!m_ui_running)
         m_ui_running = true;
