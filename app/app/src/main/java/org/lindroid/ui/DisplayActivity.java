@@ -361,7 +361,7 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
 
     private void triggerSurfaceChanged(Surface surface, int w, int h) {
         if (mSurfaceRunnable != null)
-            mHandler.removeCallbacksAndMessages(mSurfaceRunnable);
+            mHandler.removeCallbacks(mSurfaceRunnable);
         mSurfaceRunnable = () -> applySurfaceChanges(surface, w, h);
         mHandler.postDelayed(mSurfaceRunnable, 200);
     }
