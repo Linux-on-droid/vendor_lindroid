@@ -58,6 +58,8 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
     private int mDisplayID = 0;
     private int mPreviousWidth = 0;
     private int mPreviousHeight = 0;
+    private int mPreviousDensityDpi = 0;
+    private float mPreviousRefresh = 0.0f;
     private Runnable mSurfaceRunnable;
     private OnBackPressedCallback backCallback;
     private ExecutorService teardownExecutor = Executors.newSingleThreadExecutor();
@@ -372,11 +374,23 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
             } catch (Exception e) {
                 Log.e(TAG, "Failed to get display refresh rate", e);
             }
-            nativeSurfaceChanged(mDisplayID, surface, getResources().getConfiguration().densityDpi, refresh);
-            if (mPreviousWidth != w || mPreviousHeight != h) {
-                nativeReconfigureInputDevice(mDisplayID, w, h);
-                mPreviousWidth = w;
-                mPreviousHeight = h;
+            int densityDpi = getResources().getConfiguration().densityDpi;
+
+            boolean sizeChanged = (mPreviousWidth != w || mPreviousHeight != h);
+            boolean densityChanged = (mPreviousDensityDpi != densityDpi);
+            boolean refreshChanged = (Float.compare(mPreviousRefresh, refresh) != 0);
+
+            if (sizeChanged || densityChanged || refreshChanged) {
+                nativeSurfaceChanged(mDisplayID, surface, densityDpi, refresh);
+
+                if (sizeChanged) {
+                    nativeReconfigureInputDevice(mDisplayID, w, h);
+                    mPreviousWidth = w;
+                    mPreviousHeight = h;
+                }
+
+                mPreviousDensityDpi = densityDpi;
+                mPreviousRefresh = refresh;
             }
         }
     }
