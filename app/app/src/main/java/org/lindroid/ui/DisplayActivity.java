@@ -81,6 +81,7 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
             startForegroundService(new Intent(this, HardwareService.class));
         }
         mTextureView = new TextureView(this);
+        mTextureView.setOpaque(true);
         setContentView(mTextureView);
         final WindowInsetsController controller = getWindow().getInsetsController();
         if (controller != null) {
