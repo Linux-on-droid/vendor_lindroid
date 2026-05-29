@@ -129,6 +129,13 @@ ndk::ScopedAStatus ComposerImpl::setPowerMode(int64_t in_displayId, int32_t in_m
     return ndk::ScopedAStatus::ok();
 }
 
+void ComposerImpl::onAppForegroundChanged(int64_t displayId, bool foreground) {
+    ALOGI("%s: Display: %" PRId64 " foreground: %d", __FUNCTION__, displayId, foreground);
+    if (mCallbacks == nullptr)
+        return;
+    mCallbacks->onAppForegroundChanged(mSequenceId, displayId, foreground);
+}
+
 ndk::ScopedAStatus ComposerImpl::setVsyncEnabled(int64_t in_displayId, int32_t in_enabled) {
     ALOGI("%s: Display: %" PRId64 " enabled: %d", __FUNCTION__, in_displayId, in_enabled);
     return ndk::ScopedAStatus::ok();

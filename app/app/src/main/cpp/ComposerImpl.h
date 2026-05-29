@@ -81,6 +81,7 @@ public:
     void onSurfaceChanged(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow, int dpi, float refresh);
     void onSurfaceDestroyed(int64_t displayId, sp<Surface> surface, ANativeWindow *nativeWindow);
     void onDisplayDestroyed(int64_t displayId);
+    void onAppForegroundChanged(int64_t displayId, bool foreground);
 
 private:
     Mutex mLock;

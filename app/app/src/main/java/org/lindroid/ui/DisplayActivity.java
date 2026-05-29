@@ -15,6 +15,7 @@ import static org.lindroid.ui.NativeLib.nativeTouchStylusButtonEvent;
 import static org.lindroid.ui.NativeLib.nativeTouchStylusHoverEvent;
 import static org.lindroid.ui.NativeLib.nativeTouchStylusEvent;
 
+import static org.lindroid.ui.NativeLib.nativeSetAppForeground;
 import static org.lindroid.ui.NativeLib.nativeGetUiRunning;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -65,6 +66,8 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
     private ExecutorService teardownExecutor = Executors.newSingleThreadExecutor();
     private TextureView mTextureView;
     private Surface mCurrentSurface;
+    private Handler mDpmsHandler;
+    private Runnable mDpmsOffRunnable;
 
     private final List<String> displayedLogs = new ArrayList<>();
     private int scrollOffset = 0;
@@ -94,6 +97,8 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
 
         if (mHandler == null)
             mHandler = new Handler(Looper.getMainLooper());
+        mDpmsHandler = new Handler(Looper.getMainLooper());
+        mDpmsOffRunnable = () -> nativeSetAppForeground(mDisplayID, false);
         mTextureView.setOnTouchListener(this);
         mTextureView.setOnHoverListener(this);
         mTextureView.setOnGenericMotionListener(this);
@@ -196,6 +201,19 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
             // draw the logs
             drawLogs();
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mDpmsHandler.removeCallbacks(mDpmsOffRunnable);
+        nativeSetAppForeground(mDisplayID, true);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mDpmsHandler.postDelayed(mDpmsOffRunnable, 1000);
     }
 
     @Override

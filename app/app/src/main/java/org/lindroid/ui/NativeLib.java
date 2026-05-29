@@ -19,6 +19,8 @@ public class NativeLib {
     
     public static native boolean nativeGetUiRunning();
 
+    public static native void nativeSetAppForeground(long displayId, boolean foreground);
+
     public static native void nativeInitInputDevice();
 
     public static native void nativeReconfigureInputDevice(long displayId, int width, int height);

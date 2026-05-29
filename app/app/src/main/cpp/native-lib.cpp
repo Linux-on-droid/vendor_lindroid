@@ -160,6 +160,23 @@ Java_org_lindroid_ui_NativeLib_nativeGetUiRunning(JNIEnv *env, jclass /* clazz *
 }
 
 extern "C" void
+Java_org_lindroid_ui_NativeLib_nativeSetAppForeground(
+    JNIEnv *env, jclass /* clazz */,
+    jlong displayId, jboolean foreground) {
+    if (composer == nullptr) {
+        int tryCount = 0;
+        while (composer == nullptr && tryCount < 10) {
+            ALOGE("Composer is not initialized! Try again...");
+            usleep(1000000);
+            tryCount++;
+        }
+        ALOGE("Composer is not initialized!");
+        return;
+    }
+    composer->onAppForegroundChanged(displayId, foreground);
+}
+
+extern "C" void
 Java_org_lindroid_ui_NativeLib_nativeInitInputDevice(
     JNIEnv *env, jclass /* clazz */) {
 
