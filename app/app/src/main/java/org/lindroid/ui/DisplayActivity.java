@@ -29,8 +29,8 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.PointerIcon;
 import android.view.Surface;
-import android.graphics.SurfaceTexture;
-import android.view.TextureView;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
@@ -49,7 +49,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class DisplayActivity extends AppCompatActivity implements TextureView.SurfaceTextureListener,
+public class DisplayActivity extends AppCompatActivity implements SurfaceHolder.Callback,
         View.OnTouchListener,
         View.OnHoverListener,
         View.OnGenericMotionListener {
@@ -64,8 +64,7 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
     private Runnable mSurfaceRunnable;
     private OnBackPressedCallback backCallback;
     private ExecutorService teardownExecutor = Executors.newSingleThreadExecutor();
-    private TextureView mTextureView;
-    private Surface mCurrentSurface;
+    private SurfaceView mSurfaceView;
     private Handler mDpmsHandler;
     private Runnable mDpmsOffRunnable;
 
@@ -83,9 +82,8 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
         if (HardwareService.getInstance() == null) {
             startForegroundService(new Intent(this, HardwareService.class));
         }
-        mTextureView = new TextureView(this);
-        mTextureView.setOpaque(true);
-        setContentView(mTextureView);
+        mSurfaceView = new SurfaceView(this);
+        setContentView(mSurfaceView);
         final WindowInsetsController controller = getWindow().getInsetsController();
         if (controller != null) {
             controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
@@ -99,13 +97,14 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
             mHandler = new Handler(Looper.getMainLooper());
         mDpmsHandler = new Handler(Looper.getMainLooper());
         mDpmsOffRunnable = () -> nativeSetAppForeground(mDisplayID, false);
-        mTextureView.setOnTouchListener(this);
-        mTextureView.setOnHoverListener(this);
-        mTextureView.setOnGenericMotionListener(this);
-        mTextureView.setSurfaceTextureListener(this);
+        SurfaceHolder sh = mSurfaceView.getHolder();
+        mSurfaceView.setOnTouchListener(this);
+        mSurfaceView.setOnHoverListener(this);
+        mSurfaceView.setOnGenericMotionListener(this);
+        sh.addCallback(this);
 
         // Hide pointer icon
-        mTextureView.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
+        mSurfaceView.setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
 
         // Register for log updates
         ContainerManager.addLogUpdateListener(mContainerName, this::onLogUpdated);
@@ -153,7 +152,7 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
     private void drawLogs() {
         if(nativeGetUiRunning())
             return;
-        Canvas canvas = mTextureView.lockCanvas();
+        Canvas canvas = mSurfaceView.getHolder().lockCanvas();
         if (canvas != null) {
             try {
                 // clear the canvas
@@ -177,7 +176,7 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
                     y += lineHeight;
                 }
             } finally {
-                mTextureView.unlockCanvasAndPost(canvas);
+                mSurfaceView.getHolder().unlockCanvasAndPost(canvas);
             }
         }
     }
@@ -220,21 +219,25 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
     protected void onDestroy() {
         if (teardownExecutor != null) teardownExecutor.shutdownNow();
         super.onDestroy();
-        // Destroyed in HardwareService when user decides to stop container
-        if (mDisplayID != 0) {
+
+        if (mDpmsHandler != null) {
+            mDpmsHandler.removeCallbacks(mDpmsOffRunnable);
+        }
+        if (mHandler != null && mSurfaceRunnable != null) {
+            mHandler.removeCallbacks(mSurfaceRunnable);
+            mSurfaceRunnable = null;
+        }
+        if (mSurfaceView != null) mSurfaceView.getHolder().removeCallback(this);
+        if (isFinishing()) {
             nativeDisplayDestroyed(mDisplayID);
             nativeStopInputDevice(mDisplayID);
+            if (ContainerManager.isAtLeastOneRunning() == null && HardwareService.getInstance() != null)
+                stopService(new Intent(this, HardwareService.class));
         }
-        if (ContainerManager.isAtLeastOneRunning() == null && HardwareService.getInstance() != null)
-            stopService(new Intent(this, HardwareService.class));
 
         // Stop log fetching and unregister listener
         ContainerManager.stopFetchingLogs(mContainerName);
         ContainerManager.removeLogUpdateListener(mContainerName, this::onLogUpdated);
-        if (mCurrentSurface != null) {
-            mCurrentSurface.release();
-            mCurrentSurface = null;
-        }
     }
 
     @Override
@@ -351,41 +354,46 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
     }
 
     @Override
-    public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
-        mCurrentSurface = new Surface(surfaceTexture);
-        nativeSurfaceCreated(mDisplayID, mCurrentSurface);
-        triggerSurfaceChanged(mCurrentSurface, width, height);
-    }
-
-    @Override
-    public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
-        if (mCurrentSurface != null) {
-            triggerSurfaceChanged(mCurrentSurface, width, height);
+    public void surfaceCreated(@NonNull SurfaceHolder holder) {
+        Surface surface = holder.getSurface();
+        if (surface != null) {
+            resetSurfaceChangeCache();
+            nativeSurfaceCreated(mDisplayID, surface);
         }
     }
 
     @Override
-    public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surfaceTexture) {
-        if (mCurrentSurface != null) {
-            nativeSurfaceDestroyed(mDisplayID, mCurrentSurface);
-            mCurrentSurface.release();
-            mCurrentSurface = null;
+    public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
+        triggerSurfaceChanged(holder, format, w, h);
+    }
+
+    private void triggerSurfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
+        if (mHandler == null) {
+            applySurfaceChanges(holder, format, w, h);
+            return;
         }
-        return true;
-    }
-
-    @Override
-    public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surfaceTexture) {
-    }
-
-    private void triggerSurfaceChanged(Surface surface, int w, int h) {
-        if (mSurfaceRunnable != null)
+        if (mSurfaceRunnable != null) {
             mHandler.removeCallbacks(mSurfaceRunnable);
-        mSurfaceRunnable = () -> applySurfaceChanges(surface, w, h);
+        }
+        mSurfaceRunnable = () -> applySurfaceChanges(holder, format, w, h);
         mHandler.postDelayed(mSurfaceRunnable, 200);
     }
 
-    private void applySurfaceChanges(Surface surface, int w, int h) {
+    @Override
+    public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+        if (mHandler != null && mSurfaceRunnable != null) {
+            mHandler.removeCallbacks(mSurfaceRunnable);
+            mSurfaceRunnable = null;
+        }
+        Surface surface = holder.getSurface();
+        if (surface != null) {
+            nativeSurfaceDestroyed(mDisplayID, surface);
+        }
+        resetSurfaceChangeCache();
+    }
+
+    private void applySurfaceChanges(@NonNull SurfaceHolder holder, int format, int w, int h) {
+        Surface surface = holder.getSurface();
         if (surface != null && surface.isValid()) {
             float refresh = 60.0f;
             try {
@@ -412,5 +420,12 @@ public class DisplayActivity extends AppCompatActivity implements TextureView.Su
                 mPreviousRefresh = refresh;
             }
         }
+    }
+
+    private void resetSurfaceChangeCache() {
+        mPreviousWidth = 0;
+        mPreviousHeight = 0;
+        mPreviousDensityDpi = 0;
+        mPreviousRefresh = 0.0f;
     }
 }

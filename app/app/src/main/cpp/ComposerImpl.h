@@ -1,14 +1,14 @@
 #pragma once
 
-#include <atomic>
+#include <condition_variable>
 #include <cstdint>
 #include <functional>
 #include <chrono>
-#include <condition_variable>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
 
+#include <android/surface_control.h>
 #include <gui/Surface.h>
 #include <gui/DisplayEventReceiver.h>
 #include <ui/Fence.h>
@@ -21,15 +21,12 @@
 #include <aidl/vendor/lindroid/composer/DisplayConfiguration.h>
 #include <aidl/vendor/lindroid/composer/IComposerCallback.h>
 
-#define MAX_DEQUEUEABLE_BUFFERS 5
-
 using aidl::android::hardware::graphics::common::HardwareBuffer;
 using aidl::vendor::lindroid::composer::DisplayConfiguration;
 using aidl::vendor::lindroid::composer::IComposerCallback;
 using android::Mutex;
 using android::sp;
 using android::Surface;
-using android::SurfaceListener;
 
 namespace aidl {
 namespace vendor {
@@ -56,11 +53,13 @@ private:
 
 struct ComposerDisplay {
     sp<Surface> surface;
-    ANativeWindow *nativeWindow;
-    DisplayConfiguration displayConfig;
-    bool plugged;
-    sp<SurfaceListener> listener;
+    ANativeWindow *nativeWindow = nullptr;
+    ASurfaceControl *surfaceControl = nullptr;
+    DisplayConfiguration displayConfig{};
+    bool plugged = false;
     VsyncThread mVsyncThread;
+    std::mutex mFenceLock;
+    int mPresentFenceFd{-1};
 };
 
 class ComposerImpl : public BnComposer {
